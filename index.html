@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>KinderControl Pro | Cloud Sync</title>
+    <title>KinderControlPro | Cloud Sync</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -467,7 +467,7 @@
 <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
         <div class="logo-icon" style="display:flex;margin-left:auto;margin-right:auto;"><i class="fas fa-rocket"></i></div>
-        <h1>KinderControl Pro</h1>
+        <h1>KinderControlPro</h1>
         <p>Inicia sesión para continuar</p>
         <div class="login-error" id="loginError"></div>
         <form id="loginForm">
@@ -485,7 +485,7 @@
         <div class="logo-area">
             <div class="logo-icon"><i class="fas fa-rocket"></i></div>
             <div>
-                <h1 id="brandNameHeader">KinderControl Pro</h1>
+                <h1 id="brandNameHeader">KinderControlPro</h1>
                 <span>Gestión Profesional de Ludotecas</span>
             </div>
         </div>
@@ -515,6 +515,8 @@
         <button class="nav-btn active" data-tab="active-tab"><i class="fas fa-clock"></i> Activos</button>
         <button class="nav-btn" data-tab="checkin-tab"><i class="fas fa-door-open"></i> Entrada</button>
         <button class="nav-btn" data-tab="kids-tab"><i class="fas fa-users"></i> Niños</button>
+        <button class="nav-btn" data-tab="inventory-tab" data-secure="true"><i class="fas fa-boxes"></i> Inventario</button>
+        <button class="nav-btn" data-tab="plans-tab" data-secure="true"><i class="fas fa-file-invoice-dollar"></i> Planes</button>
         <button class="nav-btn" data-tab="history-tab"><i class="fas fa-history"></i> Historial</button>
         <button class="nav-btn" data-tab="cash-tab" data-secure="true"><i class="fas fa-chart-line"></i> Corte</button>
         <button class="nav-btn" data-tab="settings-tab" data-secure="true"><i class="fas fa-cog"></i> Config</button>
@@ -547,7 +549,10 @@
                             <input type="hidden" id="selectedChildId">
                         </div>
 
-                        <div class="form-grid">
+                        <div id="checkinDebtWarning" style="display:none; background: #fee2e2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 12px 16px; color: #991b1b; font-size:0.85rem; margin-bottom: 15px;"></div>
+                        <div id="checkinPlanOptionGroup" style="display:none;"></div>
+
+                        <div class="form-grid" id="checkinStandardFields">
                             <div class="form-group">
                                 <label>Horas Prepago</label>
                                 <select id="hoursSelect">
@@ -610,6 +615,143 @@
                             </thead>
                             <tbody id="kidsTableBody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div id="inventory-tab" class="tab-pane">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                <!-- Productos -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-boxes"></i> Productos en Inventario</h2>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+                            <button class="btn btn-outline btn-sm" onclick="openAddCategoryModal()"><i class="fas fa-tags"></i> Categorías</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="filters-bar" style="margin-bottom:15px; align-items:center;">
+                            <div class="form-group" style="flex:1;">
+                                <label>Buscar Producto</label>
+                                <input type="text" id="prodSearchInput" placeholder="Nombre de producto...">
+                            </div>
+                            <div class="form-group">
+                                <label>Categoría</label>
+                                <select id="prodCategoryFilter">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Categoría</th>
+                                        <th>Stock</th>
+                                        <th>Costo Compra</th>
+                                        <th>Precio Venta</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Venta Rápida y Reportes -->
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-shopping-cart"></i> Venta Rápida</h2></div>
+                        <div class="card-body">
+                            <button class="btn btn-primary" onclick="openQuickSellModal()" style="width:100%;"><i class="fas fa-cart-plus"></i> Registrar Nueva Venta</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-file-invoice"></i> Reporte de Ventas</h2></div>
+                        <div class="card-body">
+                            <div class="form-group" style="margin-bottom:10px;">
+                                <label>Desde</label>
+                                <input type="date" id="salesFrom">
+                            </div>
+                            <div class="form-group" style="margin-bottom:15px;">
+                                <label>Hasta</label>
+                                <input type="date" id="salesTo">
+                            </div>
+                            <button class="btn btn-outline" onclick="generateSalesReportPdf()" style="width:100%; margin-bottom:10px;"><i class="fas fa-file-pdf" style="color:var(--danger);"></i> Descargar PDF de Ventas</button>
+                            <div style="border-top:1px solid var(--border); padding-top:15px; margin-top:15px;">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                    <span>Ventas Totales:</span>
+                                    <strong id="repTotalSales">$0.00</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                    <span>Costo Adquisición:</span>
+                                    <strong id="repTotalCost">$0.00</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; color:var(--success); font-weight:800;">
+                                    <span>Ganancia Neta:</span>
+                                    <strong id="repNetProfit">$0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PLANES DE HORAS -->
+        <div id="plans-tab" class="tab-pane">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Plantillas de Planes -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-file-invoice-dollar"></i> Plantillas de Planes</h2>
+                        <button class="btn btn-primary btn-sm" onclick="openAddPlanModal()"><i class="fas fa-plus"></i> Nuevo Plan</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Plan</th>
+                                        <th>Costo</th>
+                                        <th>Duración</th>
+                                        <th>Hrs Totales</th>
+                                        <th>Hrs/Día</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plansTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Niños con Planes Activos -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user-check"></i> Niños con Plan Activo</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Niño</th>
+                                        <th>Plan</th>
+                                        <th>Restante</th>
+                                        <th>Vence</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activePlansTableBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -744,6 +886,12 @@
                     <textarea id="fAuthorized" rows="2" placeholder="Nombres separados por coma. Ej: María Pérez, Juan López"></textarea>
                 </div>
                 <div class="form-group"><label>Notas Médicas</label><textarea id="fMedical" rows="3"></textarea></div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label>Costo Hora Extra Personalizado ($)</label>
+                        <input type="number" id="fCustomExtraHourRate" min="0" step="any" placeholder="Dejar vacío para usar tarifa global">
+                    </div>
+                </div>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-outline" onclick="closeChildModal()">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
         </form>
@@ -759,6 +907,14 @@
                 <label>Total a cobrar</label>
                 <div style="font-size:1.6rem;font-weight:800;color:var(--primary);" id="coTotal">$0.00</div>
                 <small class="hint" id="coExtraNote" style="color:var(--danger);font-weight:600;"></small>
+            </div>
+            <div class="form-group" id="coPayMethodGroup" style="margin-bottom: 15px; display: none;">
+                <label>Método de Pago *</label>
+                <select id="coPayMethod" required>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Tarjeta">Tarjeta / Transferencia</option>
+                    <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>¿Quién recoge al niño? *</label>
@@ -792,6 +948,283 @@
             </div>
         </div>
         <div class="modal-footer"><button class="btn btn-outline" onclick="window.print()">Imprimir</button><button class="btn btn-primary" onclick="closeReceiptModal()">Cerrar</button></div>
+    </div>
+</div>
+
+<!-- MODAL: GESTIONAR CATEGORIAS -->
+<div id="categoryModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header"><h2>Gestionar Categorías</h2><button onclick="closeCategoryModal()">×</button></div>
+        <div class="modal-body">
+            <div class="table-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTableBody"></tbody>
+                </table>
+            </div>
+            <form id="categoryForm" style="border-top: 1px solid var(--border); padding-top: 15px;">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label>Nueva Categoría</label>
+                    <input type="text" id="fCategoryName" required placeholder="Ej: Bebidas, Galletas">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Agregar Categoría</button>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeCategoryModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: PRODUCTO -->
+<div id="productModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header"><h2 id="productModalTitle">Registrar Producto</h2><button onclick="closeProductModal()">×</button></div>
+        <form id="productForm">
+            <input type="hidden" id="editProductId">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nombre del Producto *</label>
+                    <input type="text" id="pName" required placeholder="Ej: Chocochips 50g">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Categoría *</label>
+                    <select id="pCategorySelect" required>
+                        <option value="">-- Seleccionar Categoría --</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Stock / Cantidad *</label>
+                    <input type="number" id="pStock" required min="0" value="0">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Costo de Compra ($) *</label>
+                        <input type="number" id="pCost" required min="0" step="any" placeholder="Precio al que lo compras">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio de Venta ($) *</label>
+                        <input type="number" id="pPrice" required min="0" step="any" placeholder="Precio al que lo vendes">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeProductModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: PLAN -->
+<div id="planModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header"><h2 id="planModalTitle">Registrar Plan</h2><button onclick="closePlanModal()">×</button></div>
+        <form id="planForm">
+            <input type="hidden" id="editPlanId">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Nombre del Plan *</label>
+                    <input type="text" id="plName" required placeholder="Ej: Plan Mensual 20 Horas">
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Costo ($) *</label>
+                        <input type="number" id="plCost" required min="0" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>Duración (días) *</label>
+                        <input type="number" id="plDuration" required min="1" placeholder="Ej: 30">
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label>Horas Incluidas *</label>
+                        <input type="number" id="plTotalHours" required min="1" step="any">
+                    </div>
+                    <div class="form-group">
+                        <label>Horas límite por Día *</label>
+                        <input type="number" id="plHoursPerDay" required min="1" step="any" placeholder="Ej: 2 o 4">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closePlanModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: ASIGNAR PLAN -->
+<div id="assignPlanModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header"><h2>Asignar Plan de Horas</h2><button onclick="closeAssignPlanModal()">×</button></div>
+        <form id="assignPlanForm">
+            <input type="hidden" id="apChildId">
+            <div class="modal-body">
+                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                    <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div id="apChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
+                        <div id="apChildParent" style="font-size: 0.85rem; color: var(--text-muted);">-</div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Seleccionar Plan *</label>
+                    <select id="apPlanSelect" required onchange="onPlanSelectChange()">
+                        <option value="">-- Seleccionar Plan --</option>
+                    </select>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group"><label>Costo ($) *</label><input type="number" id="apCost" required min="0" step="any"></div>
+                    <div class="form-group"><label>Duración (días) *</label><input type="number" id="apDuration" required min="1"></div>
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <div class="form-group"><label>Fecha de Pago / Inicio *</label><input type="date" id="apStartDate" required onchange="updateApExpirationDate()"></div>
+                    <div class="form-group"><label>Vencimiento *</label><input type="date" id="apEndDate" required></div>
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <div class="form-group"><label>Horas Incluidas *</label><input type="number" id="apTotalHours" required min="1" step="any"></div>
+                    <div class="form-group"><label>Límite Horas/Día *</label><input type="number" id="apHoursPerDay" required min="1" step="any"></div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Método de Pago *</label>
+                    <select id="apPayMethod" required>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta / Transferencia</option>
+                        <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeAssignPlanModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Asignar y Cobrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: VENTA DE PRODUCTO -->
+<div id="sellProductModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header"><h2>Registrar Venta de Producto</h2><button onclick="closeSellProductModal()">×</button></div>
+        <form id="sellProductForm">
+            <input type="hidden" id="spChildId">
+            <div class="modal-body">
+                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;" id="spChildHeader">
+                    <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div id="spChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
+                        <div id="spChildParent" style="font-size: 0.85rem; color: var(--text-muted);">-</div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; display: none;" id="spChildSearchGroup">
+                    <label>Seleccionar Niño *</label>
+                    <select id="spChildSelect">
+                        <option value="">-- Seleccionar Niño --</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Seleccionar Producto *</label>
+                    <select id="spProductSelect" required onchange="onSellProductChange()">
+                        <option value="">-- Seleccionar Producto --</option>
+                    </select>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Cantidad (Stock: <span id="spStockLabel">-</span>) *</label>
+                        <input type="number" id="spQuantity" required min="1" value="1" oninput="updateSpTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label>Precio Unitario</label>
+                        <input type="text" id="spPriceVal" readonly style="background:#f1f5f9;">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-size: 1.2rem; font-weight: 800; color: var(--primary); text-align: right;">
+                    Total: <span id="spTotalVal">$0.00</span>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Método de Pago *</label>
+                    <select id="spPayMethod" required>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta / Transferencia</option>
+                        <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeSellProductModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Registrar Venta</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: ESTADO DE CUENTA -->
+<div id="accountModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header"><h2>Estado de Cuenta / Deudas</h2><button onclick="closeAccountModal()">×</button></div>
+        <div class="modal-body">
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+                <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
+                <div>
+                    <div id="acChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
+                    <div id="acChildParent" style="font-size: 0.85rem; color: var(--text-muted);">-</div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <div class="stat-card" style="padding:15px; flex:1; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label">Deuda Total</span>
+                    <span class="stat-value" style="font-size:1.6rem;color:var(--danger);" id="acDebtVal">$0.00</span>
+                </div>
+                <div class="stat-card" style="padding:15px; flex:1; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label">Debe desde</span>
+                    <span class="stat-value" style="font-size:1.1rem;color:var(--text-main); margin-top:5px;" id="acDebtSinceVal">-</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 10px; font-size: 1rem; font-weight: 700;">Detalle de Cargos Pendientes</h3>
+            <div class="table-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Importe</th>
+                        </tr>
+                    </thead>
+                    <tbody id="acChargesBody"></tbody>
+                </table>
+            </div>
+
+            <div id="acPaySection" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 15px; display: none;">
+                <h4 style="color:#92400e; font-weight: 700; margin-bottom: 10px;"><i class="fas fa-cash-register"></i> Registrar Pago de Adeudo</h4>
+                <div class="form-grid" style="grid-template-columns: 1fr 1fr; align-items: flex-end; gap: 10px; margin-bottom: 0;">
+                    <div class="form-group">
+                        <label>Método de Pago</label>
+                        <select id="acPayMethod">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta / Transferencia</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="payDebt()" style="height: 48px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
+                </div>
+            </div>
+            <div id="acNoDebtMsg" class="empty-state" style="padding: 15px; display: none;">
+                <i class="fas fa-check-circle" style="color: var(--success); font-size: 2rem; opacity: 0.7; margin-bottom: 10px;"></i>
+                <p>El niño no tiene deudas pendientes</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" onclick="closeAccountModal()">Cerrar</button>
+        </div>
     </div>
 </div>
 
@@ -836,7 +1269,8 @@
 
     let state = {
         children: [], activeSessions: [], history: [],
-        config: { brandName: 'Ludoteca Pro', hourlyRate: 50, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
+        categories: [], products: [], plans: [], sales: [],
+        config: { brandName: 'KinderControlPro', hourlyRate: 50, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
         currentSecureTab: null
     };
 
@@ -907,6 +1341,11 @@
             $('userEmailChip').innerHTML = `<i class="fas fa-user-circle"></i> ${user.email}`;
             initListeners();
             startTimerInterval();
+            
+            // Establecer fechas iniciales para reportes
+            const todayStr = new Date().toISOString().split('T')[0];
+            if ($('salesFrom')) $('salesFrom').value = todayStr;
+            if ($('salesTo')) $('salesTo').value = todayStr;
         } else {
             detachListeners();
             if (timerInterval) clearInterval(timerInterval);
@@ -922,6 +1361,10 @@
         unsubscribers.push(onSnapshot(collection(db, "kids"), snap => {
             state.children = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderKidsList();
+            renderActivePlansTable();
+            if (window.currentAccountChildId) {
+                openAccountModal(window.currentAccountChildId);
+            }
         }, err => showToast('Error leyendo niños: ' + err.message, 'error')));
 
         unsubscribers.push(onSnapshot(collection(db, "sessions"), snap => {
@@ -935,6 +1378,9 @@
             renderHistory();
             renderCashSummary();
             updateIncomeToday();
+            if (window.currentAccountChildId) {
+                openAccountModal(window.currentAccountChildId);
+            }
         }, err => showToast('Error leyendo historial: ' + err.message, 'error')));
 
         unsubscribers.push(onSnapshot(doc(db, "settings", "appConfig"), snap => {
@@ -945,6 +1391,32 @@
                 setDoc(doc(db, "settings", "appConfig"), state.config).catch(() => {});
             }
         }, err => showToast('Error leyendo configuración: ' + err.message, 'error')));
+
+        unsubscribers.push(onSnapshot(collection(db, "categories"), snap => {
+            state.categories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            populateCategoryDropdowns();
+            renderCategories();
+        }, err => showToast('Error leyendo categorías: ' + err.message, 'error')));
+
+        unsubscribers.push(onSnapshot(collection(db, "products"), snap => {
+            state.products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderProducts();
+            populateProductDropdowns();
+        }, err => showToast('Error leyendo productos: ' + err.message, 'error')));
+
+        unsubscribers.push(onSnapshot(collection(db, "plans"), snap => {
+            state.plans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderPlans();
+            populatePlanDropdowns();
+        }, err => showToast('Error leyendo planes: ' + err.message, 'error')));
+
+        unsubscribers.push(onSnapshot(query(collection(db, "sales"), orderBy("date", "desc")), snap => {
+            state.sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderSalesReport();
+            if (window.currentAccountChildId) {
+                openAccountModal(window.currentAccountChildId);
+            }
+        }, err => showToast('Error leyendo ventas: ' + err.message, 'error')));
     }
 
     function detachListeners() {
@@ -992,16 +1464,24 @@
 
     $('childForm').onsubmit = async (e) => {
         e.preventDefault();
+        const customRateVal = $('fCustomExtraHourRate').value;
         const data = {
             name: $('fChildName').value.trim(), age: $('fChildAge').value,
             parentName: $('fParentName').value.trim(), phone: $('fPhone').value.trim(),
             authorized: $('fAuthorized').value.trim(),
-            medical: $('fMedical').value.trim()
+            medical: $('fMedical').value.trim(),
+            customExtraHourRate: customRateVal ? parseFloat(customRateVal) : null
         };
         const id = $('editChildId').value;
         try {
-            if (id) await updateDoc(doc(db, "kids", id), data);
-            else await addDoc(collection(db, "kids"), data);
+            if (id) {
+                await updateDoc(doc(db, "kids", id), data);
+            } else {
+                data.debt = 0;
+                data.debtSince = null;
+                data.activePlan = null;
+                await addDoc(collection(db, "kids"), data);
+            }
             closeChildModal();
             showToast("Guardado");
         } catch (err) {
@@ -1019,6 +1499,7 @@
         $('fPhone').value = c.phone || '';
         $('fAuthorized').value = c.authorized || '';
         $('fMedical').value = c.medical || '';
+        $('fCustomExtraHourRate').value = c.customExtraHourRate || '';
         $('childModal').style.display = 'flex';
     };
 
@@ -1044,22 +1525,42 @@
             $('kidsTableBody').innerHTML = `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>No hay niños registrados</p></div></td></tr>`;
             return;
         }
-        $('kidsTableBody').innerHTML = rows.map(c => `
-            <tr>
-                <td data-label="Nombre del Niño"><strong>${c.name}</strong></td>
-                <td data-label="Edad">${c.age || '-'}</td>
-                <td data-label="Tutor / Padre">${c.parentName}</td>
-                <td data-label="Teléfono">${c.phone}</td>
-                <td data-label="Autorizados"><small>${c.authorized || '-'}</small></td>
-                <td data-label="Notas Médicas"><small>${c.medical || '-'}</small></td>
-                <td data-label="Acciones">
-                    <div style="display:flex;gap:5px;justify-content:flex-end;">
-                        <button class="btn btn-outline btn-icon" onclick="editChild('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-icon" onclick="deleteChild('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        $('kidsTableBody').innerHTML = rows.map(c => {
+            let debtBadge = '';
+            if (c.debt && c.debt > 0) {
+                const dateStr = c.debtSince ? new Date(c.debtSince).toLocaleDateString('es-MX') : '';
+                debtBadge = `<br><span class="kid-status-badge danger" style="margin-top:5px; display:inline-block; font-size:0.75rem;"><i class="fas fa-exclamation-triangle"></i> Debe ${formatMoney(c.debt)} desde ${dateStr}</span>`;
+            }
+            let planBadge = '';
+            if (c.activePlan && c.activePlan.hoursRemaining > 0) {
+                const expDate = new Date(c.activePlan.expirationDate + 'T23:59:59');
+                const now = new Date();
+                if (expDate >= now) {
+                    planBadge = `<br><span class="kid-status-badge success" style="margin-top:5px; display:inline-block; font-size:0.75rem;"><i class="fas fa-star"></i> Plan: ${c.activePlan.name} (${c.activePlan.hoursRemaining.toFixed(1)}h rest.)</span>`;
+                } else {
+                    planBadge = `<br><span class="kid-status-badge warning" style="margin-top:5px; display:inline-block; font-size:0.75rem;"><i class="fas fa-calendar-times"></i> Plan Expirado</span>`;
+                }
+            }
+            return `
+                <tr>
+                    <td data-label="Nombre del Niño"><strong>${c.name}</strong>${debtBadge}${planBadge}</td>
+                    <td data-label="Edad">${c.age || '-'}</td>
+                    <td data-label="Tutor / Padre">${c.parentName}</td>
+                    <td data-label="Teléfono">${c.phone}</td>
+                    <td data-label="Autorizados"><small>${c.authorized || '-'}</small></td>
+                    <td data-label="Notas Médicas"><small>${c.medical || '-'}</small></td>
+                    <td data-label="Acciones">
+                        <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-icon" onclick="openSellModal('${c.id}')" title="Vender Producto"><i class="fas fa-shopping-cart" style="color:var(--success);"></i></button>
+                            <button class="btn btn-outline btn-icon" onclick="openAssignPlanModal('${c.id}')" title="Asignar Plan"><i class="fas fa-file-invoice-dollar" style="color:var(--primary-light);"></i></button>
+                            <button class="btn btn-outline btn-icon" onclick="openAccountModal('${c.id}')" title="Estado de Cuenta"><i class="fas fa-wallet" style="color:${c.debt > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></i></button>
+                            <button class="btn btn-outline btn-icon" onclick="editChild('${c.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-icon" onclick="deleteChild('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
     $('kidsListSearch').oninput = renderKidsList;
 
@@ -1098,7 +1599,53 @@
         $('searchResults').style.display = 'none';
         $('checkinSearch').value = "";
         $('noSelectedChild').style.display = 'none';
+
+        // Alerta de Adeudo
+        if (c.debt && c.debt > 0) {
+            $('checkinDebtWarning').innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Adeudo pendiente:</strong> Debe ${formatMoney(c.debt)} desde ${new Date(c.debtSince).toLocaleDateString('es-MX')}.`;
+            $('checkinDebtWarning').style.display = 'block';
+        } else {
+            $('checkinDebtWarning').style.display = 'none';
+        }
+
+        // Opciones de Plan Activo
+        if (c.activePlan && c.activePlan.hoursRemaining > 0) {
+            const exp = new Date(c.activePlan.expirationDate + 'T23:59:59');
+            const expired = new Date() > exp;
+            if (!expired) {
+                $('checkinPlanOptionGroup').innerHTML = `
+                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <input type="checkbox" id="checkinUsePlan" checked style="width: 20px; height: 20px; cursor: pointer;" onchange="onCheckinUsePlanChange()">
+                        <div>
+                            <label for="checkinUsePlan" style="font-weight:700; color:#065f46; cursor:pointer; text-transform:none; font-size:0.9rem;">Usar horas de Plan Activo</label>
+                            <div style="font-size:0.8rem; color:#047857;">${c.activePlan.name} (${c.activePlan.hoursRemaining.toFixed(1)}h restantes, máx ${c.activePlan.hoursPerDay}h/día)</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                $('checkinPlanOptionGroup').innerHTML = `
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 12px 16px; color: #991b1b; font-size:0.85rem; margin-bottom: 15px;">
+                        <i class="fas fa-calendar-times"></i> El plan activo de este niño ha expirado.
+                    </div>
+                `;
+            }
+            $('checkinPlanOptionGroup').style.display = 'block';
+        } else {
+            $('checkinPlanOptionGroup').style.display = 'none';
+        }
+
+        window.onCheckinUsePlanChange();
         $('checkinForm').style.display = 'block';
+    };
+
+    window.onCheckinUsePlanChange = () => {
+        const usePlanCheckbox = $('checkinUsePlan');
+        const standardFields = $('checkinStandardFields');
+        if (usePlanCheckbox && usePlanCheckbox.checked) {
+            standardFields.style.display = 'none';
+        } else {
+            standardFields.style.display = 'grid';
+        }
     };
 
     $('cancelCheckin').onclick = () => {
@@ -1110,16 +1657,36 @@
     $('checkinForm').onsubmit = async e => {
         e.preventDefault();
         const now = new Date();
-        const hrs = parseInt($('hoursSelect').value);
+        const usePlanCheckbox = $('checkinUsePlan');
+        const usePlan = usePlanCheckbox && usePlanCheckbox.checked;
+        const childId = $('selectedChildId').value;
+        const child = state.children.find(c => c.id === childId);
+        
+        let hrs = 0;
+        let limitTime = now;
+        let method = '';
+        
+        if (usePlan && child && child.activePlan) {
+            const plan = child.activePlan;
+            hrs = Math.min(plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            limitTime = new Date(now.getTime() + hrs * 3600000);
+            method = 'Plan: ' + plan.name;
+        } else {
+            hrs = parseInt($('hoursSelect').value);
+            limitTime = new Date(now.getTime() + hrs * 3600000);
+            method = $('payMethod').value;
+        }
+
         try {
             await addDoc(collection(db, "sessions"), {
-                childId: $('selectedChildId').value,
+                childId: childId,
                 entryTime: now.toISOString(),
-                limitTime: new Date(now.getTime() + hrs * 3600000).toISOString(),
+                limitTime: limitTime.toISOString(),
                 hoursPaid: hrs,
-                method: $('payMethod').value,
+                method: method,
                 notes: $('checkinNotes').value.trim(),
-                notified: false
+                notified: false,
+                usePlan: usePlan || false
             });
             $('checkinForm').style.display = 'none';
             $('checkinForm').reset();
@@ -1139,12 +1706,24 @@
         }
         $('activeContainer').innerHTML = state.activeSessions.map(s => {
             const child = state.children.find(c => c.id === s.childId) || { name: '?' };
+            
+            let debtWarning = '';
+            if (child.debt && child.debt > 0) {
+                debtWarning = `<div style="color:var(--danger); font-size:0.75rem; font-weight:700; margin-top:4px;"><i class="fas fa-exclamation-triangle"></i> Debe ${formatMoney(child.debt)}</div>`;
+            }
+            let planInfo = '';
+            if (s.usePlan) {
+                planInfo = `<div style="color:var(--success); font-size:0.75rem; font-weight:700; margin-top:4px;"><i class="fas fa-star"></i> Usando Plan</div>`;
+            }
+
             return `
                 <div class="kid-card" id="card-${s.id}">
                     <div class="kid-card-header">
                         <div class="kid-info-main">
                             <h3>${child.name}</h3>
-                            <small>${s.hoursPaid}h pagadas · ${s.method}</small>
+                            <small>${s.hoursPaid > 0 ? s.hoursPaid + 'h pagadas · ' : ''}${s.method}</small>
+                            ${debtWarning}
+                            ${planInfo}
                         </div>
                         <span class="kid-status-badge success" id="badge-${s.id}">A TIEMPO</span>
                     </div>
@@ -1152,9 +1731,10 @@
                         <div class="label" id="label-${s.id}">RESTANTE</div>
                         <div class="timer" id="timer-${s.id}" data-limit="${s.limitTime}" data-id="${s.id}">00:00:00</div>
                     </div>
-                    <div class="kid-actions">
-                        <button class="btn btn-outline" style="flex:1;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>
-                        <button class="btn btn-primary" style="flex:1;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>
+                    <div class="kid-actions" style="flex-wrap:wrap; gap:8px;">
+                        <button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="openSellModal('${s.childId}')" title="Vender Producto"><i class="fas fa-cookie-bite"></i> + Prod</button>
+                        <button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>
+                        <button class="btn btn-primary btn-sm" style="flex:1; min-width:80px;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>
                     </div>
                 </div>
             `;
@@ -1237,38 +1817,80 @@
         }
     };
 
-    // --- CHECKOUT (Fraccionado) ---
+    // Redondeo de horas facturables: si los minutos sobrantes < 10, no se cobra esa hora
+    function calcBillableHours(minutes) {
+        const wholeHours = Math.floor(minutes / 60);
+        const remainder = minutes % 60;
+        return remainder >= 10 ? wholeHours + 1 : wholeHours;
+    }
+
+    // --- CHECKOUT ---
     window.requestCheckout = id => {
         const s = state.activeSessions.find(x => x.id === id);
         if (!s) return;
         const child = state.children.find(c => c.id === s.childId) || { name: '(niño no encontrado)' };
         const now = new Date();
-        const limit = new Date(s.limitTime);
-        const isOver = now > limit;
+        const entry = new Date(s.entryTime);
+        const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
         
+        let prepaidCost = 0;
         let extraCharge = 0;
+        let total = 0;
         let extraTimeStr = '0m';
-        let fractions = 0;
-        if (isOver) {
-            const extraMinutes = Math.ceil((now - limit) / 60000);
-            fractions = Math.ceil(extraMinutes / 15);
-            extraCharge = fractions * (state.config.fractionRate || 0);
-            const extraHrs = Math.floor(extraMinutes / 60);
-            const extraMins = extraMinutes % 60;
-            extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
-        }
+        let planHoursDeducted = 0;
+        
+        const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
 
-        const prepaidCost = s.hoursPaid * state.config.hourlyRate;
-        const total = prepaidCost + extraCharge;
+        if (s.usePlan) {
+            const plan = child.activePlan || {};
+            // Horas facturables con regla de 10 min
+            const billableHours = calcBillableHours(durationMinutes);
+            const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            planHoursDeducted = Math.round(maxDeduct * 100) / 100;
+
+            const extraBillableHours = Math.max(0, billableHours - planHoursDeducted);
+            extraCharge = extraBillableHours * ratePerHour;
+            total = extraCharge;
+
+            extraTimeStr = extraBillableHours > 0 ? `${extraBillableHours}h extra` : '0m';
+        } else {
+            const limit = new Date(s.limitTime);
+            const isOver = now > limit;
+            if (isOver) {
+                const overMs = now - limit;
+                const overMinutes = Math.ceil(overMs / 60000);
+                const extraBillableHours = calcBillableHours(overMinutes);
+                extraCharge = extraBillableHours * ratePerHour;
+                const extraHrs = Math.floor(overMinutes / 60);
+                const extraMins = overMinutes % 60;
+                extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
+            }
+            prepaidCost = s.hoursPaid * state.config.hourlyRate;
+            total = prepaidCost + extraCharge;
+        }
 
         pendingCheckoutId = id;
         $('coChildName').innerText = child.name;
         $('coTotal').innerText = formatMoney(total);
-        $('coExtraNote').innerText = isOver 
-            ? `Retraso: ${extraTimeStr} (${fractions} frac. de 15m) · Cargo extra: ${formatMoney(extraCharge)}` 
-            : 'Sin recargo por tiempo extra.';
+        
+        if (s.usePlan) {
+            $('coExtraNote').innerText = `Consumo plan: ${planHoursDeducted.toFixed(1)}h deducidas. ` +
+                (extraCharge > 0 ? `Exceso: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}` : 'Sin recargo extra (menos de 10 min sobrantes).');
+        } else {
+            $('coExtraNote').innerText = extraCharge > 0
+                ? `Tiempo extra: ${extraTimeStr} · Cargo: ${formatMoney(extraCharge)}`
+                : 'Sin recargo por tiempo extra (menos de 10 min sobrantes).';
+        }
+        
         $('coPickedUpBy').value = child.parentName || '';
         $('coAuthorizedHint').innerText = child.authorized ? `Autorizados: ${child.authorized}` : 'Solo el tutor registrado.';
+        
+        if (total > 0) {
+            $('coPayMethodGroup').style.display = 'block';
+        } else {
+            $('coPayMethodGroup').style.display = 'none';
+        }
+        
         $('checkoutModal').style.display = 'flex';
     };
 
@@ -1287,37 +1909,66 @@
         if (!s) return closeCheckoutModal();
         const child = state.children.find(c => c.id === s.childId) || { name: '(niño no encontrado)' };
         const now = new Date();
-        const limit = new Date(s.limitTime);
         const entry = new Date(s.entryTime);
-        const isOver = now > limit;
+        const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
         
+        let prepaidCost = 0;
         let extraCharge = 0;
+        let total = 0;
         let extraTimeStr = '0m';
-        let fractions = 0;
-        if (isOver) {
-            const extraMinutes = Math.ceil((now - limit) / 60000);
-            fractions = Math.ceil(extraMinutes / 15);
-            extraCharge = fractions * (state.config.fractionRate || 0);
-            const extraHrs = Math.floor(extraMinutes / 60);
-            const extraMins = extraMinutes % 60;
-            extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
+        let planHoursDeducted = 0;
+        
+        const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
+
+        if (s.usePlan) {
+            const plan = child.activePlan || {};
+            // Horas facturables con regla de 10 min
+            const billableHours = calcBillableHours(durationMinutes);
+            const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            planHoursDeducted = Math.round(maxDeduct * 100) / 100;
+
+            const extraBillableHours = Math.max(0, billableHours - planHoursDeducted);
+            extraCharge = extraBillableHours * ratePerHour;
+            total = extraCharge;
+
+            extraTimeStr = extraBillableHours > 0 ? `${extraBillableHours}h extra` : '0m';
+        } else {
+            const limit = new Date(s.limitTime);
+            const isOver = now > limit;
+            if (isOver) {
+                const overMs = now - limit;
+                const overMinutes = Math.ceil(overMs / 60000);
+                const extraBillableHours = calcBillableHours(overMinutes);
+                extraCharge = extraBillableHours * ratePerHour;
+                const extraHrs = Math.floor(overMinutes / 60);
+                const extraMins = overMinutes % 60;
+                extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
+            }
+            prepaidCost = s.hoursPaid * state.config.hourlyRate;
+            total = prepaidCost + extraCharge;
         }
 
-        const prepaidCost = s.hoursPaid * state.config.hourlyRate;
-        const total = prepaidCost + extraCharge;
-        const durationMinutes = Math.round((now - entry) / 60000);
+        const payMethod = total > 0 ? $('coPayMethod').value : (s.usePlan ? 'Plan' : s.method);
 
         const log = {
-            childName: child.name, date: now.toISOString(),
-            entry: s.entryTime, exit: now.toISOString(),
+            childId: child.id,
+            childName: child.name,
+            date: now.toISOString(),
+            entry: s.entryTime,
+            exit: now.toISOString(),
             durationMinutes,
-            total, method: s.method,
+            total,
+            method: payMethod,
             notes: s.notes || '',
             pickedUpBy,
             extra: extraCharge > 0,
             prepaidCost,
             extraCharge,
-            extraTimeStr
+            extraTimeStr,
+            usePlan: s.usePlan || false,
+            planHoursDeducted,
+            status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
+            paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
         };
 
         $('coConfirmBtn').disabled = true;
@@ -1326,18 +1977,39 @@
             await deleteDoc(doc(db, "sessions", id));
             notifiedLocally.delete(id);
 
-            // Cargar Ticket
+            if (s.usePlan && child.activePlan) {
+                const plan = child.activePlan;
+                const newHours = Math.max(0, plan.hoursRemaining - planHoursDeducted);
+                await updateDoc(doc(db, "kids", child.id), {
+                    "activePlan.hoursRemaining": newHours
+                });
+            }
+
+            if (payMethod === 'A Cuenta') {
+                const newDebt = (child.debt || 0) + total;
+                const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
+                await updateDoc(doc(db, "kids", child.id), {
+                    debt: newDebt,
+                    debtSince: newDebtSince
+                });
+            }
+
             $('rBrand').innerText = state.config.brandName;
             $('rDate').innerText = formatDate(now);
             $('rChild').innerText = child.name;
             $('rEntry').innerText = formatTimeShort(entry);
             $('rExit').innerText = formatTimeShort(now);
             $('rDuration').innerText = formatDuration(durationMinutes);
-            $('rPrepaid').innerText = `${s.hoursPaid}h (${formatMoney(prepaidCost)})`;
+            
+            if (s.usePlan) {
+                $('rPrepaid').innerText = `Plan (${planHoursDeducted.toFixed(1)}h consumidas)`;
+            } else {
+                $('rPrepaid').innerText = `${s.hoursPaid}h (${formatMoney(prepaidCost)})`;
+            }
             $('rExtra').innerText = extraCharge > 0 ? `${extraTimeStr} (${formatMoney(extraCharge)})` : 'Ninguno';
             $('rPickedUp').innerText = pickedUpBy;
             $('rTotal').innerText = formatMoney(total);
-            $('rFooter').innerText = state.config.footerMsg || '';
+            $('rFooter').innerText = (state.config.footerMsg || '') + (payMethod === 'A Cuenta' ? '\n* CARGADO A CUENTA *' : '');
 
             closeCheckoutModal();
             $('receiptModal').style.display = 'flex';
@@ -1349,6 +2021,101 @@
     };
 
     window.closeReceiptModal = () => $('receiptModal').style.display = 'none';
+
+    // --- DEBT PAYOFF & ACCOUNT STATE ---
+    window.openAccountModal = async childId => {
+        window.currentAccountChildId = childId;
+        const child = state.children.find(c => c.id === childId);
+        if (!child) return;
+
+        $('acChildName').innerText = child.name;
+        $('acDebtTotal').innerText = formatMoney(child.debt || 0);
+
+        // Obtener historial de sesiones pendientes de pago
+        const unpaidSessions = state.history.filter(h => h.childId === childId && h.status === 'pending');
+        // Obtener ventas pendientes de pago
+        const unpaidSales = state.sales.filter(s => s.childId === childId && s.status === 'pending');
+
+        if (unpaidSessions.length === 0 && unpaidSales.length === 0) {
+            $('acDetailsBody').innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:10px;"><p>No hay deudas registradas.</p></div></td></tr>`;
+            $('acPayBtn').style.display = 'none';
+            $('acPayMethodGroup').style.display = 'none';
+        } else {
+            let html = '';
+            unpaidSessions.forEach(s => {
+                html += `
+                    <tr>
+                        <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
+                        <td>Tiempo: ${formatDuration(s.durationMinutes)}</td>
+                        <td>${formatMoney(s.total)}</td>
+                        <td><span class="kid-status-badge danger">Pendiente</span></td>
+                    </tr>
+                `;
+            });
+            unpaidSales.forEach(s => {
+                html += `
+                    <tr>
+                        <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
+                        <td>${s.concept} (x${s.qty || 1})</td>
+                        <td>${formatMoney(s.amount)}</td>
+                        <td><span class="kid-status-badge danger">Pendiente</span></td>
+                    </tr>
+                `;
+            });
+            $('acDetailsBody').innerHTML = html;
+            $('acPayBtn').style.display = 'block';
+            $('acPayMethodGroup').style.display = 'block';
+        }
+
+        $('accountModal').style.display = 'flex';
+    };
+
+    window.closeAccountModal = () => {
+        $('accountModal').style.display = 'none';
+        window.currentAccountChildId = null;
+    };
+
+    window.payDebt = async () => {
+        const childId = window.currentAccountChildId;
+        const child = state.children.find(c => c.id === childId);
+        if (!child || !child.debt) return;
+
+        const payMethod = $('acPayMethod').value;
+        const now = new Date().toISOString();
+
+        $('acPayBtn').disabled = true;
+        try {
+            const unpaidSales = state.sales.filter(s => s.childId === childId && s.status === 'pending');
+            for (const s of unpaidSales) {
+                await updateDoc(doc(db, "sales", s.id), {
+                    status: 'paid',
+                    paymentMethod: payMethod,
+                    paymentDate: now
+                });
+            }
+
+            const unpaidSessions = state.history.filter(h => h.childId === childId && h.status === 'pending');
+            for (const s of unpaidSessions) {
+                await updateDoc(doc(db, "history", s.id), {
+                    status: 'paid',
+                    method: payMethod,
+                    paymentDate: now
+                });
+            }
+
+            await updateDoc(doc(db, "kids", childId), {
+                debt: 0,
+                debtSince: null
+            });
+
+            closeAccountModal();
+            showToast("Deuda liquidada correctamente");
+        } catch (err) {
+            showToast("Error al liquidar deuda: " + err.message, "error");
+        } finally {
+            $('acPayBtn').disabled = false;
+        }
+    };
 
     // --- HISTORIAL ---
     function getFilteredHistory() {
@@ -1376,7 +2143,7 @@
                 <td data-label="Niño"><strong>${h.childName}</strong></td>
                 <td data-label="Entrada / Salida">${formatTimeShort(h.entry)} - ${formatTimeShort(h.exit)}</td>
                 <td data-label="Tiempo Total">${formatDuration(h.durationMinutes)}</td>
-                <td data-label="Importe">${formatMoney(h.total)}</td>
+                <td data-label="Importe">${formatMoney(h.total)} ${h.status === 'pending' ? '(<span style="color:var(--danger);font-weight:700;">Debe</span>)' : ''}</td>
                 <td data-label="Método">${h.method}</td>
                 <td data-label="Recogió">${h.pickedUpBy || '-'}</td>
                 <td data-label="Obs."><small>${h.notes || '-'}</small></td>
@@ -1410,7 +2177,8 @@
         const rows = getPeriodHistory(period);
         const total = rows.reduce((acc, h) => acc + (h.total || 0), 0);
         const cash = rows.filter(h => h.method === 'Efectivo').reduce((acc, h) => acc + (h.total || 0), 0);
-        const card = rows.filter(h => h.method !== 'Efectivo').reduce((acc, h) => acc + (h.total || 0), 0);
+        const card = rows.filter(h => h.method !== 'Efectivo' && h.method !== 'A Cuenta').reduce((acc, h) => acc + (h.total || 0), 0);
+        const outstanding = rows.filter(h => h.method === 'A Cuenta' && h.status === 'pending').reduce((acc, h) => acc + (h.total || 0), 0);
         const visits = rows.length;
         const avg = visits > 0 ? (total / visits) : 0;
 
@@ -1428,8 +2196,8 @@
                 <span class="stat-value" style="font-size:1.8rem;color:var(--primary-light);">${formatMoney(card)}</span>
             </div>
             <div class="stat-card" style="padding:20px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
-                <span class="stat-label">Visitas Totales</span>
-                <span class="stat-value" style="font-size:1.8rem;color:var(--text-main);">${visits}</span>
+                <span class="stat-label"><i class="fas fa-exclamation-circle" style="color:var(--danger);"></i> Por Cobrar (A Cuenta)</span>
+                <span class="stat-value" style="font-size:1.8rem;color:var(--danger);">${formatMoney(outstanding)}</span>
             </div>
             <div class="stat-card" style="padding:20px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
                 <span class="stat-label">Ticket Promedio</span>
@@ -1438,6 +2206,604 @@
         `;
     }
     $('cashPeriod').onchange = renderCashSummary;
+
+    // --- CATEGORIES ---
+    window.openAddCategoryModal = () => {
+        $('fCategoryName').value = '';
+        $('categoryModal').style.display = 'flex';
+        renderCategories();
+    };
+    window.closeCategoryModal = () => $('categoryModal').style.display = 'none';
+
+    $('categoryForm').onsubmit = async e => {
+        e.preventDefault();
+        const name = $('fCategoryName').value.trim();
+        if (!name) return;
+        try {
+            await addDoc(collection(db, "categories"), { name });
+            $('fCategoryName').value = '';
+            showToast("Categoría agregada");
+        } catch (err) {
+            showToast("Error al agregar categoría: " + err.message, "error");
+        }
+    };
+
+    window.deleteCategory = async id => {
+        if (state.products.some(p => p.categoryId === id)) {
+            return showToast("No se puede eliminar: hay productos asociados", "error");
+        }
+        if (!confirm("¿Eliminar esta categoría?")) return;
+        try {
+            await deleteDoc(doc(db, "categories", id));
+            showToast("Categoría eliminada");
+        } catch (err) {
+            showToast("Error al eliminar categoría: " + err.message, "error");
+        }
+    };
+
+    function renderCategories() {
+        if (state.categories.length === 0) {
+            $('categoriesTableBody').innerHTML = `<tr><td colspan="2"><div class="empty-state" style="padding:10px;"><p>No hay categorías</p></div></td></tr>`;
+            return;
+        }
+        $('categoriesTableBody').innerHTML = state.categories.map(c => `
+            <tr>
+                <td><strong>${c.name}</strong></td>
+                <td>
+                    <button class="btn btn-danger btn-icon btn-sm" onclick="deleteCategory('${c.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function populateCategoryDropdowns() {
+        const options = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        $('pCategorySelect').innerHTML = `<option value="">-- Seleccionar Categoría --</option>` + options;
+        $('prodCategoryFilter').innerHTML = `<option value="">Todas</option>` + options;
+    }
+
+    // --- PRODUCTS ---
+    window.openAddProductModal = () => {
+        $('productModalTitle').innerText = "Nuevo Producto";
+        $('editProductId').value = '';
+        $('productForm').reset();
+        $('productModal').style.display = 'flex';
+    };
+    window.closeProductModal = () => $('productModal').style.display = 'none';
+
+    $('productForm').onsubmit = async e => {
+        e.preventDefault();
+        const id = $('editProductId').value;
+        const data = {
+            name: $('pName').value.trim(),
+            categoryId: $('pCategorySelect').value,
+            stock: parseInt($('pStock').value),
+            cost: parseFloat($('pCost').value),
+            price: parseFloat($('pPrice').value)
+        };
+        try {
+            if (id) {
+                await updateDoc(doc(db, "products", id), data);
+            } else {
+                await addDoc(collection(db, "products"), data);
+            }
+            closeProductModal();
+            showToast("Producto guardado");
+        } catch (err) {
+            showToast("Error al guardar producto: " + err.message, "error");
+        }
+    };
+
+    window.editProduct = id => {
+        const p = state.products.find(x => x.id === id);
+        if (!p) return;
+        $('editProductId').value = p.id;
+        $('pName').value = p.name || '';
+        $('pCategorySelect').value = p.categoryId || '';
+        $('pStock').value = p.stock || 0;
+        $('pCost').value = p.cost || 0;
+        $('pPrice').value = p.price || 0;
+        $('productModalTitle').innerText = "Editar Producto";
+        $('productModal').style.display = 'flex';
+    };
+
+    window.deleteProduct = async id => {
+        if (!confirm("¿Eliminar este producto?")) return;
+        try {
+            await deleteDoc(doc(db, "products", id));
+            showToast("Producto eliminado");
+        } catch (err) {
+            showToast("Error al eliminar producto: " + err.message, "error");
+        }
+    };
+
+    function renderProducts() {
+        const search = $('prodSearchInput').value.toLowerCase();
+        const catId = $('prodCategoryFilter').value;
+        const rows = state.products.filter(p => {
+            const matchesSearch = (p.name || '').toLowerCase().includes(search);
+            const matchesCategory = !catId || p.categoryId === catId;
+            return matchesSearch && matchesCategory;
+        });
+
+        if (rows.length === 0) {
+            $('productsTableBody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>No hay productos</p></div></td></tr>`;
+            return;
+        }
+
+        $('productsTableBody').innerHTML = rows.map(p => {
+            const category = state.categories.find(c => c.id === p.categoryId) || { name: 'Sin Categoría' };
+            return `
+                <tr>
+                    <td data-label="Producto"><strong>${p.name}</strong></td>
+                    <td data-label="Categoría">${category.name}</td>
+                    <td data-label="Stock" style="color: ${p.stock <= 2 ? 'var(--danger)' : 'inherit'}; font-weight: ${p.stock <= 2 ? '700' : 'normal'};">
+                        ${p.stock}
+                    </td>
+                    <td data-label="Costo Compra">${formatMoney(p.cost)}</td>
+                    <td data-label="Precio Venta">${formatMoney(p.price)}</td>
+                    <td data-label="Acciones">
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-outline btn-icon btn-sm" onclick="editProduct('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-icon btn-sm" onclick="deleteProduct('${p.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    $('prodSearchInput').oninput = renderProducts;
+    $('prodCategoryFilter').onchange = renderProducts;
+
+    // --- PRODUCT SALES ---
+    window.openSellModal = childId => {
+        window.currentSellChildId = childId;
+        const child = state.children.find(c => c.id === childId);
+        if (child) {
+            $('spChildId').value = child.id;
+            $('spChildName').innerText = child.name;
+            $('spChildParent').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone}`;
+            $('spChildHeader').style.display = 'flex';
+            $('spChildSearchGroup').style.display = 'none';
+            $('spPayMethodACuenta').disabled = false;
+            $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
+        } else {
+            $('spChildId').value = '';
+            $('spChildHeader').style.display = 'none';
+            $('spChildSearchGroup').style.display = 'block';
+            populateSellChildDropdown();
+            $('spPayMethodACuenta').disabled = true;
+            $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
+            $('spPayMethod').value = 'Efectivo';
+        }
+        $('sellProductForm').reset();
+        $('spStockLabel').innerText = '-';
+        $('spPriceVal').value = '';
+        $('spTotalVal').innerText = '$0.00';
+        $('sellProductModal').style.display = 'flex';
+    };
+
+    window.openQuickSellModal = () => {
+        window.openSellModal(null);
+    };
+
+    window.closeSellProductModal = () => $('sellProductModal').style.display = 'none';
+
+    function populateSellChildDropdown() {
+        const options = state.children.map(c => `<option value="${c.id}">${c.name} (${c.parentName})</option>`).join('');
+        $('spChildSelect').innerHTML = `<option value="">-- Venta de Mostrador (Sin Niño) --</option>` + options;
+    }
+
+    $('spChildSelect').onchange = () => {
+        const val = $('spChildSelect').value;
+        if (val) {
+            $('spPayMethodACuenta').disabled = false;
+            $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
+        } else {
+            $('spPayMethodACuenta').disabled = true;
+            $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
+            if ($('spPayMethod').value === 'A Cuenta') {
+                $('spPayMethod').value = 'Efectivo';
+            }
+        }
+    };
+
+    function populateProductDropdowns() {
+        const options = state.products.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.price)}) - Stock: ${p.stock}</option>`).join('');
+        $('spProductSelect').innerHTML = `<option value="">-- Seleccionar Producto --</option>` + options;
+    }
+
+    window.onSellProductChange = () => {
+        const prodId = $('spProductSelect').value;
+        const p = state.products.find(x => x.id === prodId);
+        if (p) {
+            $('spStockLabel').innerText = p.stock;
+            $('spPriceVal').value = p.price;
+            $('spQuantity').max = p.stock;
+            updateSpTotal();
+        } else {
+            $('spStockLabel').innerText = '-';
+            $('spPriceVal').value = '';
+            $('spTotalVal').innerText = '$0.00';
+        }
+    };
+
+    window.updateSpTotal = () => {
+        const price = parseFloat($('spPriceVal').value) || 0;
+        const qty = parseInt($('spQuantity').value) || 0;
+        $('spTotalVal').innerText = formatMoney(price * qty);
+    };
+
+    $('sellProductForm').onsubmit = async e => {
+        e.preventDefault();
+        const prodId = $('spProductSelect').value;
+        const p = state.products.find(x => x.id === prodId);
+        if (!p) return showToast("Selecciona un producto", "error");
+
+        const qty = parseInt($('spQuantity').value);
+        if (isNaN(qty) || qty <= 0) return showToast("Cantidad no válida", "error");
+        if (qty > p.stock) return showToast("Stock insuficiente", "error");
+
+        const childId = $('spChildId').value || $('spChildSelect').value;
+        const child = childId ? state.children.find(c => c.id === childId) : null;
+        const payMethod = $('spPayMethod').value;
+
+        if (payMethod === 'A Cuenta' && !child) {
+            return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
+        }
+
+        const now = new Date();
+        const totalAmount = qty * p.price;
+        const totalCost = qty * (p.cost || 0);
+
+        try {
+            const saleData = {
+                childId: child ? child.id : '',
+                childName: child ? child.name : 'Venta de Mostrador',
+                type: 'product',
+                concept: `Compra: ${p.name}`,
+                qty: qty,
+                price: p.price,
+                cost: totalCost,
+                amount: totalAmount,
+                date: now.toISOString(),
+                status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
+                paymentMethod: payMethod,
+                paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
+            };
+
+            await addDoc(collection(db, "sales"), saleData);
+
+            await updateDoc(doc(db, "products", p.id), {
+                stock: p.stock - qty
+            });
+
+            if (payMethod === 'A Cuenta' && child) {
+                const newDebt = (child.debt || 0) + totalAmount;
+                const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
+                await updateDoc(doc(db, "kids", child.id), {
+                    debt: newDebt,
+                    debtSince: newDebtSince
+                });
+            }
+
+            closeSellProductModal();
+            showToast("Venta registrada con éxito");
+        } catch (err) {
+            showToast("Error al registrar venta: " + err.message, "error");
+        }
+    };
+
+    // --- PLANS ---
+    window.openAddPlanModal = () => {
+        $('planModalTitle').innerText = "Nuevo Plan";
+        $('editPlanId').value = '';
+        $('planForm').reset();
+        $('planModal').style.display = 'flex';
+    };
+    window.closePlanModal = () => $('planModal').style.display = 'none';
+
+    $('planForm').onsubmit = async e => {
+        e.preventDefault();
+        const id = $('editPlanId').value;
+        const data = {
+            name: $('plName').value.trim(),
+            cost: parseFloat($('plCost').value),
+            duration: parseInt($('plDuration').value),
+            totalHours: parseFloat($('plTotalHours').value),
+            hoursPerDay: parseFloat($('plHoursPerDay').value)
+        };
+        try {
+            if (id) {
+                await updateDoc(doc(db, "plans", id), data);
+            } else {
+                await addDoc(collection(db, "plans"), data);
+            }
+            closePlanModal();
+            showToast("Plan guardado");
+        } catch (err) {
+            showToast("Error al guardar plan: " + err.message, "error");
+        }
+    };
+
+    window.editPlan = id => {
+        const p = state.plans.find(x => x.id === id);
+        if (!p) return;
+        $('editPlanId').value = p.id;
+        $('plName').value = p.name || '';
+        $('plCost').value = p.cost || 0;
+        $('plDuration').value = p.duration || 30;
+        $('plTotalHours').value = p.totalHours || 20;
+        $('plHoursPerDay').value = p.hoursPerDay || 2;
+        $('planModalTitle').innerText = "Editar Plan";
+        $('planModal').style.display = 'flex';
+    };
+
+    window.deletePlan = async id => {
+        if (!confirm("¿Eliminar este plan de las plantillas?")) return;
+        try {
+            await deleteDoc(doc(db, "plans", id));
+            showToast("Plan eliminado");
+        } catch (err) {
+            showToast("Error al eliminar plan: " + err.message, "error");
+        }
+    };
+
+    function renderPlans() {
+        if (state.plans.length === 0) {
+            $('plansTableBody').innerHTML = `<tr><td colspan="6"><div class="empty-state"><p>No hay planes creados</p></div></td></tr>`;
+            return;
+        }
+        $('plansTableBody').innerHTML = state.plans.map(p => `
+            <tr>
+                <td data-label="Plan"><strong>${p.name}</strong></td>
+                <td data-label="Costo">${formatMoney(p.cost)}</td>
+                <td data-label="Duración">${p.duration} días</td>
+                <td data-label="Hrs Totales">${p.totalHours}h</td>
+                <td data-label="Hrs/Día">${p.hoursPerDay}h/día</td>
+                <td data-label="Acciones">
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-outline btn-icon btn-sm" onclick="editPlan('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-icon btn-sm" onclick="deletePlan('${p.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function populatePlanDropdowns() {
+        const options = state.plans.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.cost)})</option>`).join('');
+        $('apPlanSelect').innerHTML = `<option value="">-- Seleccionar Plan --</option>` + options;
+    }
+
+    // --- ASSIGN PLAN TO CHILD ---
+    window.openAssignPlanModal = childId => {
+        const child = state.children.find(c => c.id === childId);
+        if (!child) return;
+        $('apChildId').value = child.id;
+        $('apChildName').innerText = child.name;
+        $('apChildParent').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone}`;
+        $('assignPlanForm').reset();
+        
+        const today = new Date().toISOString().split('T')[0];
+        $('apStartDate').value = today;
+        
+        $('assignPlanModal').style.display = 'flex';
+    };
+
+    window.closeAssignPlanModal = () => $('assignPlanModal').style.display = 'none';
+
+    window.onPlanSelectChange = () => {
+        const planId = $('apPlanSelect').value;
+        const p = state.plans.find(x => x.id === planId);
+        if (p) {
+            $('apCost').value = p.cost;
+            $('apDuration').value = p.duration;
+            $('apTotalHours').value = p.totalHours;
+            $('apHoursPerDay').value = p.hoursPerDay;
+            updateApExpirationDate();
+        } else {
+            $('apCost').value = '';
+            $('apDuration').value = '';
+            $('apTotalHours').value = '';
+            $('apHoursPerDay').value = '';
+            $('apEndDate').value = '';
+        }
+    };
+
+    window.updateApExpirationDate = () => {
+        const startDateStr = $('apStartDate').value;
+        const duration = parseInt($('apDuration').value) || 0;
+        if (startDateStr && duration > 0) {
+            const start = new Date(startDateStr + 'T00:00:00');
+            const end = new Date(start.getTime() + duration * 86400000);
+            $('apEndDate').value = end.toISOString().split('T')[0];
+        }
+    };
+
+    $('assignPlanForm').onsubmit = async e => {
+        e.preventDefault();
+        const childId = $('apChildId').value;
+        const child = state.children.find(c => c.id === childId);
+        if (!child) return;
+
+        const planId = $('apPlanSelect').value;
+        const planName = $('apPlanSelect').options[$('apPlanSelect').selectedIndex].text.split(' (')[0];
+        const cost = parseFloat($('apCost').value);
+        const duration = parseInt($('apDuration').value);
+        const startDate = $('apStartDate').value;
+        const expirationDate = $('apEndDate').value;
+        const totalHours = parseFloat($('apTotalHours').value);
+        const hoursPerDay = parseFloat($('apHoursPerDay').value);
+        const payMethod = $('apPayMethod').value;
+
+        const now = new Date();
+
+        try {
+            const activePlan = {
+                planId,
+                name: planName,
+                totalHours,
+                hoursRemaining: totalHours,
+                hoursPerDay,
+                startDate,
+                expirationDate,
+                paymentDate: now.toISOString(),
+                cost
+            };
+
+            const saleData = {
+                childId: child.id,
+                childName: child.name,
+                type: 'plan',
+                concept: `Asignación Plan: ${planName}`,
+                qty: 1,
+                price: cost,
+                cost: 0,
+                amount: cost,
+                date: now.toISOString(),
+                status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
+                paymentMethod: payMethod,
+                paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
+            };
+
+            await addDoc(collection(db, "sales"), saleData);
+
+            const updates = { activePlan };
+            if (payMethod === 'A Cuenta') {
+                updates.debt = (child.debt || 0) + cost;
+                updates.debtSince = child.debtSince ? child.debtSince : now.toISOString();
+            }
+
+            await updateDoc(doc(db, "kids", child.id), updates);
+
+            closeAssignPlanModal();
+            showToast("Plan asignado con éxito");
+        } catch (err) {
+            showToast("Error al asignar plan: " + err.message, "error");
+        }
+    };
+
+    function renderActivePlansTable() {
+        const kidsWithPlans = state.children.filter(c => c.activePlan && c.activePlan.hoursRemaining > 0);
+        if (kidsWithPlans.length === 0) {
+            $('activePlansTableBody').innerHTML = `<tr><td colspan="5"><div class="empty-state" style="padding:10px;"><p>No hay planes asignados activos</p></div></td></tr>`;
+            return;
+        }
+
+        $('activePlansTableBody').innerHTML = kidsWithPlans.map(c => {
+            const plan = c.activePlan;
+            const exp = new Date(plan.expirationDate + 'T23:59:59');
+            const expired = new Date() > exp;
+            return `
+                <tr>
+                    <td data-label="Niño"><strong>${c.name}</strong></td>
+                    <td data-label="Plan">${plan.name}</td>
+                    <td data-label="Restante">${plan.hoursRemaining.toFixed(1)}h / ${plan.totalHours}h</td>
+                    <td data-label="Vence" style="color: ${expired ? 'var(--danger)' : 'inherit'}; font-weight: ${expired ? '700' : 'normal'};">
+                        ${new Date(plan.expirationDate + 'T00:00:00').toLocaleDateString('es-MX')}
+                        ${expired ? ' (Expirado)' : ''}
+                    </td>
+                    <td data-label="Acciones">
+                        <button class="btn btn-danger btn-sm" onclick="cancelChildActivePlan('${c.id}')" title="Cancelar Plan"><i class="fas fa-times-circle"></i> Cancelar</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.cancelChildActivePlan = async id => {
+        if (!confirm("¿Quitar el plan de este niño? Se perderán las horas restantes.")) return;
+        try {
+            await updateDoc(doc(db, "kids", id), {
+                activePlan: null
+            });
+            showToast("Plan quitado");
+        } catch (err) {
+            showToast("Error al quitar plan: " + err.message, "error");
+        }
+    };
+
+    // --- SALES REPORTS ---
+    function renderSalesReport() {
+        if (!$('salesFrom') || !$('salesTo')) return;
+        const fromStr = $('salesFrom').value;
+        const toStr = $('salesTo').value;
+        const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+        const to = toStr ? new Date(toStr + 'T23:59:59') : null;
+
+        const filteredSales = state.sales.filter(s => {
+            const d = new Date(s.date);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        });
+
+        const totalSales = filteredSales.reduce((sum, s) => sum + (s.amount || 0), 0);
+        const totalCost = filteredSales.reduce((sum, s) => sum + (s.cost || 0), 0);
+        const netProfit = totalSales - totalCost;
+
+        $('repTotalSales').innerText = formatMoney(totalSales);
+        $('repTotalCost').innerText = formatMoney(totalCost);
+        $('repNetProfit').innerText = formatMoney(netProfit);
+        $('repNetProfit').style.color = netProfit < 0 ? 'var(--danger)' : 'var(--success)';
+    }
+
+    window.generateSalesReportPdf = () => {
+        const fromStr = $('salesFrom').value;
+        const toStr = $('salesTo').value;
+        const from = fromStr ? new Date(fromStr + 'T00:00:00') : new Date();
+        const to = toStr ? new Date(toStr + 'T23:59:59') : new Date();
+
+        const filteredSales = state.sales.filter(s => {
+            const d = new Date(s.date);
+            if (fromStr && d < from) return false;
+            if (toStr && d > to) return false;
+            return true;
+        });
+
+        if (filteredSales.length === 0) {
+            return showToast("No hay ventas en este rango", "error");
+        }
+
+        const totalSales = filteredSales.reduce((sum, s) => sum + (s.amount || 0), 0);
+        const totalCost = filteredSales.reduce((sum, s) => sum + (s.cost || 0), 0);
+        const netProfit = totalSales - totalCost;
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        pdf.setFontSize(16);
+        pdf.text(state.config.brandName || 'Ludoteca', 14, 15);
+        pdf.setFontSize(12);
+        pdf.text(`Reporte de Ventas de Inventario y Planes`, 14, 22);
+        pdf.setFontSize(10);
+        pdf.text(`Rango: ${fromStr || 'Inicio'} - ${toStr || 'Hoy'} | Generado: ${formatDate(new Date())}`, 14, 28);
+        
+        pdf.autoTable({
+            startY: 34,
+            head: [['Fecha', 'Niño / Cliente', 'Concepto', 'Cant', 'Total', 'Método', 'Estado']],
+            body: filteredSales.map(s => [
+                formatDate(s.date), 
+                s.childName || 'Venta Libre', 
+                s.concept, 
+                s.qty || 1, 
+                formatMoney(s.amount), 
+                s.paymentMethod, 
+                s.status === 'pending' ? 'PENDIENTE' : 'PAGADO'
+            ]),
+            styles: { fontSize: 8 }
+        });
+        
+        const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 40;
+        pdf.setFontSize(11);
+        pdf.text(`Ingresos Totales: ${formatMoney(totalSales)}`, 14, finalY + 10);
+        pdf.text(`Costo Adquisición: ${formatMoney(totalCost)}`, 14, finalY + 16);
+        pdf.text(`Ganancia Neta: ${formatMoney(netProfit)}`, 14, finalY + 22);
+        
+        pdf.save(`reporte_ventas_${Date.now()}.pdf`);
+        showToast("PDF generado");
+    };
 
     // --- EXPORTACIÓN (XLSX / PDF) ---
     window.exportData = (range, format) => {
