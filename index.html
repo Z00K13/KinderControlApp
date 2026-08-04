@@ -465,18 +465,46 @@
 
 <!-- ===== LOGIN OVERLAY ===== -->
 <div id="loginOverlay" class="login-overlay">
-    <div class="login-card">
+    <div class="login-card" style="max-width: 420px;">
         <div class="logo-icon" style="display:flex;margin-left:auto;margin-right:auto;"><i class="fas fa-rocket"></i></div>
         <h1>KinderControlPro</h1>
-        <p>Inicia sesión para continuar</p>
+        <p style="margin-bottom: 15px;">Inicia sesión para continuar</p>
+        
+        <!-- Pestañas de modo de acceso -->
+        <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 50px; margin-bottom: 20px;">
+            <button type="button" id="tabModeWorker" class="btn btn-sm" style="flex:1; border-radius:50px; background:var(--primary); color:white;" onclick="switchLoginMode('worker')">
+                <i class="fas fa-user"></i> Trabajador (PIN)
+            </button>
+            <button type="button" id="tabModeAdmin" class="btn btn-sm" style="flex:1; border-radius:50px; background:transparent; color:var(--text-muted);" onclick="switchLoginMode('admin')">
+                <i class="fas fa-key"></i> Admin (Firebase)
+            </button>
+        </div>
+
         <div class="login-error" id="loginError"></div>
-        <form id="loginForm">
-            <div class="form-group"><label>Correo</label><input type="email" id="loginEmail" required autocomplete="username"></div>
-            <div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" required autocomplete="current-password"></div>
-            <button type="submit" class="btn btn-primary" style="width:100%;" id="loginSubmitBtn">Entrar</button>
+
+        <!-- FORMULARIO TRABAJADORES (USUARIO + PIN) -->
+        <form id="workerLoginForm">
+            <div class="form-group">
+                <label>Nombre de Usuario *</label>
+                <input type="text" id="loginWorkerUsername" required placeholder="Ej: laura123, recepcion1" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>PIN Personal (4 Dígitos) *</label>
+                <input type="password" id="loginWorkerPin" required maxlength="4" placeholder="••••" style="text-align: center; font-size: 1.4rem; letter-spacing: 4px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;" id="workerLoginSubmitBtn">
+                <i class="fas fa-sign-in-alt"></i> Entrar como Trabajador
+            </button>
         </form>
+
+        <!-- FORMULARIO ADMIN (FIREBASE EMAIL + PASSWORD) -->
+        <form id="loginForm" style="display: none;">
+            <div class="form-group"><label>Correo Administrador *</label><input type="email" id="loginEmail" autocomplete="username"></div>
+            <div class="form-group"><label>Contraseña *</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;" id="loginSubmitBtn">Entrar como Administrador</button>
+        </form>
+
         <div class="login-loading" id="loginLoading"><i class="fas fa-spinner fa-spin"></i> Verificando...</div>
-        <p style="margin-top:1.25rem;font-size:0.75rem;color:var(--text-muted);">Los usuarios se crean desde la consola de Firebase. No hay auto-registro por seguridad.</p>
     </div>
 </div>
 
@@ -520,6 +548,7 @@
         <button class="nav-btn" data-tab="history-tab"><i class="fas fa-history"></i> Historial</button>
         <button class="nav-btn" data-tab="cash-tab" data-secure="true"><i class="fas fa-chart-line"></i> Corte</button>
         <button class="nav-btn" data-tab="settings-tab" data-secure="true"><i class="fas fa-cog"></i> Config</button>
+        <button class="nav-btn" data-tab="users-tab" data-secure="true"><i class="fas fa-users-cog"></i> Usuarios</button>
     </div>
 
     <div class="main-content">
@@ -628,8 +657,8 @@
                     <div class="card-header">
                         <h2><i class="fas fa-boxes"></i> Productos en Inventario</h2>
                         <div style="display:flex; gap:10px;">
-                            <button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
-                            <button class="btn btn-outline btn-sm" onclick="openAddCategoryModal()"><i class="fas fa-tags"></i> Categorías</button>
+                            <button class="btn btn-primary btn-sm" id="btnNewProduct" onclick="openAddProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
+                            <button class="btn btn-outline btn-sm" id="btnCategories" onclick="openAddCategoryModal()"><i class="fas fa-tags"></i> Categorías</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -863,6 +892,171 @@
                 </div>
             </div>
         </div>
+
+        <!-- GESTIÓN DE USUARIOS Y ROLES -->
+        <div id="users-tab" class="tab-pane">
+            <div class="card" style="max-width: 950px; margin: 0 auto;">
+                <div class="card-header">
+                    <h2><i class="fas fa-users-cog"></i> Gestión de Trabajadores, Roles y Permisos</h2>
+                    <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i class="fas fa-user-plus"></i> Nuevo Usuario / Trabajador</button>
+                </div>
+                <div class="card-body">
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 15px; margin-bottom: 20px; color: #1e40af; font-size: 0.88rem;">
+                        <i class="fas fa-shield-alt" style="font-size: 1.1rem; margin-right: 8px;"></i>
+                        <strong>Control de Acceso Granular:</strong> Asigna roles predefinidos (Recepción, Cajero, Maestra) o configura permisos específicos para limitar a qué secciones e información financiera tiene acceso cada trabajador.
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Trabajador</th>
+                                    <th>Usuario / Email</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Permisos Activos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: CAMBIAR TRABAJADOR EN TURNO -->
+<div id="workerSwitchModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 440px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-user-clock"></i> Selección de Trabajador en Turno</h2>
+            <button onclick="closeWorkerSwitchModal()">×</button>
+        </div>
+        <form id="workerSwitchForm">
+            <div class="modal-body">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 15px; font-size: 0.86rem; color: #166534;">
+                    <i class="fas fa-check-circle" style="color: #16a34a; font-size: 1.1rem; margin-right: 6px;"></i>
+                    <strong>Base de datos conectada.</strong> Selecciona quién está atendiendo ahora para adaptar la pantalla a tus permisos.
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Seleccionar Trabajador *</label>
+                    <select id="switchWorkerSelect" required onchange="onWorkerSwitchSelectChange()">
+                        <option value="admin">👑 Administrador Principal (Control Total)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="switchWorkerPinGroup" style="display: none; margin-bottom: 15px;">
+                    <label>PIN Personal (4 Dígitos)</label>
+                    <input type="password" id="switchWorkerPin" maxlength="4" placeholder="••••" style="text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeWorkerSwitchModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Activar Turno</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: USUARIO / TRABAJADOR -->
+<div id="userModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 620px;">
+        <div class="modal-header">
+            <h2 id="userModalTitle">Crear Acceso de Trabajador</h2>
+            <button onclick="closeUserModal()">×</button>
+        </div>
+        <form id="userForm">
+            <input type="hidden" id="editUserId">
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nombre Completo del Trabajador *</label>
+                        <input type="text" id="uName" required placeholder="Ej: Maestra Laura Gómez">
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre de Usuario / Alias (Login) *</label>
+                        <input type="text" id="uUsername" required placeholder="Ej: laura123, recepcion1">
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Rol Asignado *</label>
+                        <select id="uRoleSelect" onchange="onUserRolePresetChange()">
+                            <option value="admin">👑 Administrador Total (Control Total)</option>
+                            <option value="recepcion">📋 Recepción & Check-in</option>
+                            <option value="cajero">💳 Cajero / Tienda & Corte</option>
+                            <option value="maestra">🧸 Maestra / Cuidadora (En Sala)</option>
+                            <option value="custom">⚙️ Personalizado (Selección Manual)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado de Cuenta *</label>
+                        <select id="uStatus">
+                            <option value="active">🟢 Activo / Acceso Permitido</option>
+                            <option value="inactive">🔴 Suspendido / Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>PIN Personal de 4 dígitos *</label>
+                    <input type="password" id="uPin" maxlength="4" required placeholder="Ej: 1234">
+                </div>
+
+                <!-- Matriz de Permisos Granulares -->
+                <div style="background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-top: 15px;">
+                    <label style="font-weight: 700; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 12px;">
+                        <i class="fas fa-sliders-h"></i> Matriz de Permisos Granulares de Acceso
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermActive" onchange="markUserCustomRole()"> Ver Niños en Sala
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermCheckin" onchange="markUserCustomRole()"> Registrar Entrada
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermCheckout" onchange="markUserCustomRole()"> Registrar Salida & Cobro
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermKids" onchange="markUserCustomRole()"> Expediente de Niños
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermStore" onchange="markUserCustomRole()"> Vender en Tienda
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermInventory" onchange="markUserCustomRole()"> Gestionar Inventario
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermPlans" onchange="markUserCustomRole()"> Planes & Membresías
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermHistory" onchange="markUserCustomRole()"> Ver Historial
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermReports" onchange="markUserCustomRole()"> Reportes & Exportar
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermCash" onchange="markUserCustomRole()"> Corte de Caja e Ingresos ($)
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermSettings" onchange="markUserCustomRole()"> Configuración Global
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer">
+                            <input type="checkbox" id="uPermUsers" onchange="markUserCustomRole()"> Gestionar Usuarios & Roles
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="userSubmitBtn">Guardar Trabajador</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -1267,9 +1461,50 @@
         console.warn("Persistencia offline no disponible:", err.code);
     });
 
+    const USER_ROLE_PRESETS = {
+        admin: {
+            view_active: true, manage_checkin: true, manage_checkout: true,
+            manage_kids: true, use_store: true, manage_inventory: true,
+            manage_plans: true, view_history: true, view_reports: true,
+            view_cash: true, manage_settings: true, manage_users: true
+        },
+        recepcion: {
+            view_active: true, manage_checkin: true, manage_checkout: true,
+            manage_kids: true, use_store: false, manage_inventory: false,
+            manage_plans: true, view_history: true, view_reports: false,
+            view_cash: false, manage_settings: false, manage_users: false
+        },
+        cajero: {
+            view_active: true, manage_checkin: false, manage_checkout: true,
+            manage_kids: false, use_store: true, manage_inventory: true,
+            manage_plans: true, view_history: true, view_reports: true,
+            view_cash: true, manage_settings: false, manage_users: false
+        },
+        maestra: {
+            view_active: true, manage_checkin: true, manage_checkout: false,
+            manage_kids: false, use_store: false, manage_inventory: false,
+            manage_plans: false, view_history: false, view_reports: false,
+            view_cash: false, manage_settings: false, manage_users: false
+        },
+        custom: {
+            view_active: false, manage_checkin: false, manage_checkout: false,
+            manage_kids: false, use_store: false, manage_inventory: false,
+            manage_plans: false, view_history: false, view_reports: false,
+            view_cash: false, manage_settings: false, manage_users: false
+        }
+    };
+
+    const USER_ROLE_LABELS = {
+        admin: '👑 Admin Total',
+        recepcion: '📋 Recepción',
+        cajero: '💳 Cajero / Tienda',
+        maestra: '🧸 Maestra / Cuidadora',
+        custom: '⚙️ Personalizado'
+    };
+
     let state = {
         children: [], activeSessions: [], history: [],
-        categories: [], products: [], plans: [], sales: [],
+        categories: [], products: [], plans: [], sales: [], users: [],
         config: { brandName: 'KinderControlPro', hourlyRate: 50, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
         currentSecureTab: null
     };
@@ -1314,6 +1549,63 @@
         } catch (e) {}
     }
 
+    // --- LOGIN MODES (WORKER vs ADMIN) ---
+    window.switchLoginMode = mode => {
+        if ($('loginError')) $('loginError').innerText = '';
+        if (mode === 'worker') {
+            $('tabModeWorker').style.background = 'var(--primary)';
+            $('tabModeWorker').style.color = 'white';
+            $('tabModeAdmin').style.background = 'transparent';
+            $('tabModeAdmin').style.color = 'var(--text-muted)';
+            $('workerLoginForm').style.display = 'block';
+            $('loginForm').style.display = 'none';
+        } else {
+            $('tabModeAdmin').style.background = 'var(--primary)';
+            $('tabModeAdmin').style.color = 'white';
+            $('tabModeWorker').style.background = 'transparent';
+            $('tabModeWorker').style.color = 'var(--text-muted)';
+            $('loginForm').style.display = 'block';
+            $('workerLoginForm').style.display = 'none';
+        }
+    };
+
+    $('workerLoginForm').onsubmit = e => {
+        e.preventDefault();
+        $('loginError').innerText = '';
+        const userVal = $('loginWorkerUsername').value.trim().toLowerCase();
+        const pinVal = $('loginWorkerPin').value.trim();
+
+        if (!state.users || state.users.length === 0) {
+            $('loginError').innerText = 'Aún no hay trabajadores registrados en la app. El Administrador debe iniciar sesión primero y crearlos.';
+            return;
+        }
+
+        const matchedWorker = state.users.find(u => 
+            ((u.username || u.email || '').toLowerCase() === userVal) &&
+            u.pin === pinVal
+        );
+
+        if (!matchedWorker) {
+            $('loginError').innerText = 'Usuario o PIN de 4 dígitos incorrecto.';
+            return;
+        }
+
+        if (matchedWorker.status === 'inactive') {
+            $('loginError').innerText = 'Esta cuenta de trabajador ha sido suspendida.';
+            return;
+        }
+
+        activeWorkerId = matchedWorker.id;
+        localStorage.setItem('kinderActiveWorkerId', activeWorkerId);
+        
+        $('loginOverlay').classList.add('hidden');
+        $('appContainer').classList.remove('hidden');
+        initListeners();
+        startTimerInterval();
+        applyUserPermissions();
+        showToast('Bienvenido(a), ' + matchedWorker.name);
+    };
+
     // --- AUTH ---
     $('loginForm').onsubmit = async e => {
         e.preventDefault();
@@ -1330,8 +1622,12 @@
         }
     };
 
-    $('logoutBtn').onclick = async () => {
-        if (confirm('¿Cerrar sesión?')) await signOut(auth);
+    $('logoutBtn').onclick = async e => {
+        e.stopPropagation();
+        if (confirm('¿Cerrar sesión de Firebase (Conexión principal)?')) {
+            localStorage.removeItem('kinderActiveWorkerId');
+            await signOut(auth);
+        }
     };
 
     onAuthStateChanged(auth, user => {
@@ -1341,6 +1637,7 @@
             $('userEmailChip').innerHTML = `<i class="fas fa-user-circle"></i> ${user.email}`;
             initListeners();
             startTimerInterval();
+            applyUserPermissions();
             
             // Establecer fechas iniciales para reportes
             const todayStr = new Date().toISOString().split('T')[0];
@@ -1417,6 +1714,12 @@
                 openAccountModal(window.currentAccountChildId);
             }
         }, err => showToast('Error leyendo ventas: ' + err.message, 'error')));
+
+        unsubscribers.push(onSnapshot(collection(db, "users"), snap => {
+            state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderUsers();
+            applyUserPermissions();
+        }, err => console.warn('Usuarios colección:', err.message)));
     }
 
     function detachListeners() {
@@ -1452,6 +1755,333 @@
         } else { showToast('PIN Incorrecto', 'error'); }
     };
     window.cancelPinModal = () => $('pinModal').style.display = 'none';
+
+    // --- USUARIOS & ROLES PERMISOS ---
+    let activeWorkerId = localStorage.getItem('kinderActiveWorkerId') || 'admin';
+    let currentUserObj = null;
+
+    window.logoutFirebase = async () => {
+        if (confirm('¿Cerrar sesión de Firebase (Conexión principal)?')) {
+            localStorage.removeItem('kinderActiveWorkerId');
+            await signOut(auth);
+        }
+    };
+
+    function getUserPermissionsObj(userDoc) {
+        if (!userDoc) return USER_ROLE_PRESETS.admin;
+        if (userDoc.permissions) return userDoc.permissions;
+        return USER_ROLE_PRESETS[userDoc.role] || USER_ROLE_PRESETS.admin;
+    }
+
+    function applyUserPermissions() {
+        if (!auth.currentUser) return;
+        
+        let activeUser = null;
+        if (activeWorkerId && activeWorkerId !== 'admin') {
+            activeUser = (state.users || []).find(u => u.id === activeWorkerId);
+        }
+
+        if (!activeUser) {
+            activeUser = {
+                id: 'admin',
+                email: auth.currentUser.email,
+                name: 'Administrador Principal',
+                role: 'admin',
+                status: 'active',
+                permissions: USER_ROLE_PRESETS.admin
+            };
+        }
+
+        currentUserObj = activeUser;
+
+        if ($('userEmailChip')) {
+            $('userEmailChip').innerHTML = `<i class="fas fa-user-circle"></i> ${auth.currentUser.email}`;
+        }
+
+        if (activeUser.status === 'inactive') {
+            alert('⚠️ Esta cuenta de trabajador ha sido suspendida.');
+            activeWorkerId = 'admin';
+            localStorage.setItem('kinderActiveWorkerId', 'admin');
+            applyUserPermissions();
+            return;
+        }
+
+        const perms = getUserPermissionsObj(activeUser);
+
+        const tabNavMap = {
+            'active-tab': perms.view_active,
+            'checkin-tab': perms.manage_checkin,
+            'kids-tab': perms.manage_kids,
+            'inventory-tab': perms.use_store || perms.manage_inventory,
+            'plans-tab': perms.manage_plans,
+            'history-tab': perms.view_history,
+            'cash-tab': perms.view_cash,
+            'settings-tab': perms.manage_settings,
+            'users-tab': perms.manage_users
+        };
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            const tabId = btn.dataset.tab;
+            if (tabNavMap[tabId] !== undefined) {
+                btn.style.display = tabNavMap[tabId] ? 'inline-flex' : 'none';
+            }
+        });
+
+        const activeTabBtn = document.querySelector('.nav-btn.active');
+        if (activeTabBtn && activeTabBtn.style.display === 'none') {
+            const firstAllowedTab = Object.keys(tabNavMap).find(t => tabNavMap[t]);
+            if (firstAllowedTab) switchTab(firstAllowedTab);
+        }
+
+        if ($('incomeToday')) {
+            if (perms.view_cash) {
+                updateIncomeToday();
+            } else {
+                $('incomeToday').innerText = '$ ***';
+            }
+        }
+        
+        if ($('btnNewProduct')) {
+            $('btnNewProduct').style.display = perms.manage_inventory ? 'inline-flex' : 'none';
+        }
+        if ($('btnCategories')) {
+            $('btnCategories').style.display = perms.manage_inventory ? 'inline-flex' : 'none';
+        }
+        
+        if (state.activeSessions && state.activeSessions.length > 0) renderActive();
+        if (state.products && state.products.length > 0) renderProducts();
+    }
+
+    // Modal para Cambiar de Trabajador en Turno sin Firebase Auth
+    window.openWorkerSwitchModal = () => {
+        populateWorkerSwitchDropdown();
+        $('switchWorkerSelect').value = activeWorkerId || 'admin';
+        onWorkerSwitchSelectChange();
+        $('switchWorkerPin').value = '';
+        $('workerSwitchModal').style.display = 'flex';
+    };
+
+    window.closeWorkerSwitchModal = () => $('workerSwitchModal').style.display = 'none';
+
+    function populateWorkerSwitchDropdown() {
+        const select = $('switchWorkerSelect');
+        let optionsHtml = `<option value="admin">👑 Administrador Principal (Control Total)</option>`;
+        
+        const activeWorkers = (state.users || []).filter(u => u.status !== 'inactive');
+        optionsHtml += activeWorkers.map(u => {
+            const roleLabel = USER_ROLE_LABELS[u.role] || u.role;
+            return `<option value="${u.id}">${u.name} (${roleLabel})</option>`;
+        }).join('');
+
+        select.innerHTML = optionsHtml;
+    }
+
+    window.onWorkerSwitchSelectChange = () => {
+        const selectedId = $('switchWorkerSelect').value;
+        const pinGroup = $('switchWorkerPinGroup');
+
+        if (selectedId === 'admin') {
+            pinGroup.style.display = 'none';
+            return;
+        }
+
+        const worker = (state.users || []).find(u => u.id === selectedId);
+        if (worker && worker.pin && worker.pin.trim() !== '') {
+            pinGroup.style.display = 'block';
+        } else {
+            pinGroup.style.display = 'none';
+        }
+    };
+
+    $('workerSwitchForm').onsubmit = e => {
+        e.preventDefault();
+        const selectedId = $('switchWorkerSelect').value;
+
+        if (selectedId !== 'admin') {
+            const worker = (state.users || []).find(u => u.id === selectedId);
+            if (worker && worker.pin && worker.pin.trim() !== '') {
+                const enteredPin = $('switchWorkerPin').value.trim();
+                if (enteredPin !== worker.pin.trim()) {
+                    return showToast('PIN Incorrecto para ' + worker.name, 'error');
+                }
+            }
+        }
+
+        activeWorkerId = selectedId;
+        localStorage.setItem('kinderActiveWorkerId', activeWorkerId);
+        closeWorkerSwitchModal();
+        applyUserPermissions();
+        showToast('Turno activado para el usuario seleccionado');
+    };
+
+    window.onUserRolePresetChange = () => {
+        const roleVal = $('uRoleSelect').value;
+        const preset = USER_ROLE_PRESETS[roleVal];
+        if (!preset) return;
+
+        $('uPermActive').checked = !!preset.view_active;
+        $('uPermCheckin').checked = !!preset.manage_checkin;
+        $('uPermCheckout').checked = !!preset.manage_checkout;
+        $('uPermKids').checked = !!preset.manage_kids;
+        $('uPermStore').checked = !!preset.use_store;
+        $('uPermInventory').checked = !!preset.manage_inventory;
+        $('uPermPlans').checked = !!preset.manage_plans;
+        $('uPermHistory').checked = !!preset.view_history;
+        $('uPermReports').checked = !!preset.view_reports;
+        $('uPermCash').checked = !!preset.view_cash;
+        $('uPermSettings').checked = !!preset.manage_settings;
+        $('uPermUsers').checked = !!preset.manage_users;
+    };
+
+    window.markUserCustomRole = () => {
+        if ($('uRoleSelect').value !== 'custom') {
+            $('uRoleSelect').value = 'custom';
+        }
+    };
+
+    window.openAddUserModal = () => {
+        $('userModalTitle').innerText = "Crear Acceso de Trabajador";
+        $('editUserId').value = '';
+        $('userForm').reset();
+        $('uRoleSelect').value = 'admin';
+        onUserRolePresetChange();
+        $('userModal').style.display = 'flex';
+    };
+
+    window.closeUserModal = () => $('userModal').style.display = 'none';
+
+    $('userForm').onsubmit = async e => {
+        e.preventDefault();
+        const id = $('editUserId').value;
+        const name = $('uName').value.trim();
+        const username = $('uUsername').value.trim().toLowerCase();
+        const role = $('uRoleSelect').value;
+        const status = $('uStatus').value;
+        const pin = $('uPin').value.trim();
+
+        if (!pin || pin.length !== 4) {
+            return showToast("El PIN debe tener exactamente 4 dígitos", "error");
+        }
+
+        const permissions = {
+            view_active: $('uPermActive').checked,
+            manage_checkin: $('uPermCheckin').checked,
+            manage_checkout: $('uPermCheckout').checked,
+            manage_kids: $('uPermKids').checked,
+            use_store: $('uPermStore').checked,
+            manage_inventory: $('uPermInventory').checked,
+            manage_plans: $('uPermPlans').checked,
+            view_history: $('uPermHistory').checked,
+            view_reports: $('uPermReports').checked,
+            view_cash: $('uPermCash').checked,
+            manage_settings: $('uPermSettings').checked,
+            manage_users: $('uPermUsers').checked
+        };
+
+        const userData = {
+            name, username, role, status, pin, permissions
+        };
+
+        try {
+            if (id) {
+                await updateDoc(doc(db, "users", id), userData);
+                showToast("Trabajador actualizado correctamente");
+            } else {
+                await addDoc(collection(db, "users"), userData);
+                showToast("Trabajador registrado exitosamente");
+            }
+            closeUserModal();
+        } catch (err) {
+            showToast("Error al guardar trabajador: " + err.message, "error");
+        }
+    };
+
+    window.editUser = id => {
+        const u = state.users.find(x => x.id === id);
+        if (!u) return;
+        $('editUserId').value = u.id;
+        $('uName').value = u.name || '';
+        $('uUsername').value = u.username || u.email || '';
+        $('uRoleSelect').value = u.role || 'custom';
+        $('uStatus').value = u.status || 'active';
+        $('uPin').value = u.pin || '';
+
+        const perms = getUserPermissionsObj(u);
+        $('uPermActive').checked = !!perms.view_active;
+        $('uPermCheckin').checked = !!perms.manage_checkin;
+        $('uPermCheckout').checked = !!perms.manage_checkout;
+        $('uPermKids').checked = !!perms.manage_kids;
+        $('uPermStore').checked = !!perms.use_store;
+        $('uPermInventory').checked = !!perms.manage_inventory;
+        $('uPermPlans').checked = !!perms.manage_plans;
+        $('uPermHistory').checked = !!perms.view_history;
+        $('uPermReports').checked = !!perms.view_reports;
+        $('uPermCash').checked = !!perms.view_cash;
+        $('uPermSettings').checked = !!perms.manage_settings;
+        $('uPermUsers').checked = !!perms.manage_users;
+
+        $('userModalTitle').innerText = "Editar Acceso de Trabajador";
+        $('userModal').style.display = 'flex';
+    };
+
+    window.toggleUserStatus = async id => {
+        const u = state.users.find(x => x.id === id);
+        if (!u) return;
+        const newStatus = u.status === 'inactive' ? 'active' : 'inactive';
+        try {
+            await updateDoc(doc(db, "users", id), { status: newStatus });
+            showToast(`Cuenta ${newStatus === 'inactive' ? 'suspendida' : 'activada'}`);
+        } catch (err) {
+            showToast("Error al cambiar estado: " + err.message, "error");
+        }
+    };
+
+    window.deleteUser = async id => {
+        if (!confirm("¿Eliminar este trabajador de la lista de accesos?")) return;
+        try {
+            await deleteDoc(doc(db, "users", id));
+            showToast("Trabajador eliminado");
+        } catch (err) {
+            showToast("Error al eliminar: " + err.message, "error");
+        }
+    };
+
+    function renderUsers() {
+        if (!state.users || state.users.length === 0) {
+            $('usersTableBody').innerHTML = `<tr><td colspan="6"><div class="empty-state" style="padding:15px;"><p>No hay trabajadores registrados. Haz clic en 'Nuevo Usuario' para agregar accesos.</p></div></td></tr>`;
+            return;
+        }
+
+        $('usersTableBody').innerHTML = state.users.map(u => {
+            const isInactive = u.status === 'inactive';
+            const perms = getUserPermissionsObj(u);
+            const activePermsCount = Object.values(perms).filter(Boolean).length;
+            const displayUser = u.username || u.email || 'Sin Usuario';
+
+            return `
+                <tr>
+                    <td data-label="Trabajador"><strong>${u.name || 'Sin Nombre'}</strong></td>
+                    <td data-label="Usuario"><code>${displayUser}</code></td>
+                    <td data-label="Rol"><span class="kid-status-badge success" style="font-size:0.78rem;">${USER_ROLE_LABELS[u.role] || u.role}</span></td>
+                    <td data-label="Estado">
+                        <span class="kid-status-badge ${isInactive ? 'danger' : 'success'}">
+                            ${isInactive ? 'INACTIVO' : 'ACTIVO'}
+                        </span>
+                    </td>
+                    <td data-label="Permisos Activos"><small>${activePermsCount} de 12 permisos activos</small></td>
+                    <td data-label="Acciones">
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn btn-outline btn-icon btn-sm" onclick="editUser('${u.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline btn-icon btn-sm" onclick="toggleUserStatus('${u.id}')" title="${isInactive ? 'Activar' : 'Suspender'}">
+                                <i class="fas ${isInactive ? 'fa-user-check' : 'fa-user-slash'}" style="color:${isInactive ? 'var(--success)' : 'var(--warning)'};"></i>
+                            </button>
+                            <button class="btn btn-danger btn-icon btn-sm" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
     // --- KIDS ---
     window.openAddChildModal = () => {
@@ -1704,6 +2334,9 @@
             $('activeContainer').innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-child"></i><p>No hay niños activos en este momento</p></div>`;
             return;
         }
+
+        const perms = getUserPermissionsObj(currentUserObj);
+
         $('activeContainer').innerHTML = state.activeSessions.map(s => {
             const child = state.children.find(c => c.id === s.childId) || { name: '?' };
             
@@ -1715,6 +2348,10 @@
             if (s.usePlan) {
                 planInfo = `<div style="color:var(--success); font-size:0.75rem; font-weight:700; margin-top:4px;"><i class="fas fa-star"></i> Usando Plan</div>`;
             }
+
+            let btnProd = perms.use_store ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="openSellModal('${s.childId}')" title="Vender Producto"><i class="fas fa-cookie-bite"></i> + Prod</button>` : '';
+            let btnExtend = (perms.manage_checkin || perms.manage_checkout) ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>` : '';
+            let btnCheckout = perms.manage_checkout ? `<button class="btn btn-primary btn-sm" style="flex:1; min-width:80px;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>` : '';
 
             return `
                 <div class="kid-card" id="card-${s.id}">
@@ -1732,9 +2369,9 @@
                         <div class="timer" id="timer-${s.id}" data-limit="${s.limitTime}" data-id="${s.id}">00:00:00</div>
                     </div>
                     <div class="kid-actions" style="flex-wrap:wrap; gap:8px;">
-                        <button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="openSellModal('${s.childId}')" title="Vender Producto"><i class="fas fa-cookie-bite"></i> + Prod</button>
-                        <button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>
-                        <button class="btn btn-primary btn-sm" style="flex:1; min-width:80px;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>
+                        ${btnProd}
+                        ${btnExtend}
+                        ${btnCheckout}
                     </div>
                 </div>
             `;
@@ -2333,6 +2970,18 @@
 
         $('productsTableBody').innerHTML = rows.map(p => {
             const category = state.categories.find(c => c.id === p.categoryId) || { name: 'Sin Categoría' };
+            const perms = getUserPermissionsObj(currentUserObj);
+            
+            let actionButtons = '';
+            if (perms.manage_inventory) {
+                actionButtons = `
+                    <button class="btn btn-outline btn-icon btn-sm" onclick="editProduct('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-danger btn-icon btn-sm" onclick="deleteProduct('${p.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                `;
+            } else {
+                actionButtons = `<span style="font-size:0.8rem; color:var(--text-muted);">Solo lectura</span>`;
+            }
+
             return `
                 <tr>
                     <td data-label="Producto"><strong>${p.name}</strong></td>
@@ -2344,8 +2993,7 @@
                     <td data-label="Precio Venta">${formatMoney(p.price)}</td>
                     <td data-label="Acciones">
                         <div style="display:flex; gap:5px;">
-                            <button class="btn btn-outline btn-icon btn-sm" onclick="editProduct('${p.id}')" title="Editar"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-danger btn-icon btn-sm" onclick="deleteProduct('${p.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                            ${actionButtons}
                         </div>
                     </td>
                 </tr>
