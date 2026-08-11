@@ -595,7 +595,8 @@
                                 <label>Método de Pago</label>
                                 <select id="payMethod">
                                     <option value="Efectivo">Efectivo</option>
-                                    <option value="Tarjeta">Tarjeta / Transferencia</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+<option value="Transferencia">Transferencia</option>
                                 </select>
                             </div>
                         </div>
@@ -791,7 +792,11 @@
             <div class="card">
                 <div class="card-header">
                     <h2><i class="fas fa-history"></i> Historial de Visitas</h2>
-                    <button class="btn btn-outline btn-sm" onclick="exportData('filtered', 'xlsx')"><i class="fas fa-file-excel"></i> Excel (filtro actual)</button>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" onclick="exportData('filtered', 'xlsx')"><i class="fas fa-file-excel"></i> Excel (Visitas)</button>
+                        <button class="btn btn-primary btn-sm" onclick="exportUnifiedData('xlsx')"><i class="fas fa-file-excel"></i> Reporte Global Excel</button>
+                        <button class="btn btn-primary btn-sm" onclick="exportUnifiedData('pdf')" style="background-color: var(--danger); border-color: var(--danger);"><i class="fas fa-file-pdf"></i> Reporte Global PDF</button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="filters-bar">
@@ -1106,7 +1111,8 @@
                 <label>Método de Pago *</label>
                 <select id="coPayMethod" required>
                     <option value="Efectivo">Efectivo</option>
-                    <option value="Tarjeta">Tarjeta / Transferencia</option>
+                    <option value="Tarjeta">Tarjeta</option>
+<option value="Transferencia">Transferencia</option>
                     <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
                 </select>
             </div>
@@ -1291,7 +1297,8 @@
                     <label>Método de Pago *</label>
                     <select id="apPayMethod" required>
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta / Transferencia</option>
+                        <option value="Tarjeta">Tarjeta</option>
+<option value="Transferencia">Transferencia</option>
                         <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
                     </select>
                 </div>
@@ -1347,7 +1354,8 @@
                     <label>Método de Pago *</label>
                     <select id="spPayMethod" required>
                         <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta / Transferencia</option>
+                        <option value="Tarjeta">Tarjeta</option>
+<option value="Transferencia">Transferencia</option>
                         <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
                     </select>
                 </div>
@@ -1405,7 +1413,8 @@
                         <label>Método de Pago</label>
                         <select id="acPayMethod">
                             <option value="Efectivo">Efectivo</option>
-                            <option value="Tarjeta">Tarjeta / Transferencia</option>
+                            <option value="Tarjeta">Tarjeta</option>
+<option value="Transferencia">Transferencia</option>
                         </select>
                     </div>
                     <button class="btn btn-primary" onclick="payDebt()" style="height: 48px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
@@ -1460,6 +1469,13 @@
     enableIndexedDbPersistence(db).catch(err => {
         console.warn("Persistencia offline no disponible:", err.code);
     });
+
+    // Cargar usuarios de forma global (para login de trabajadores en nuevos dispositivos)
+    onSnapshot(collection(db, "users"), snap => {
+        state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (typeof renderUsers === 'function') renderUsers();
+        if (typeof applyUserPermissions === 'function') applyUserPermissions();
+    }, err => console.warn('No se pudieron cargar usuarios de inicio:', err.message));
 
     const USER_ROLE_PRESETS = {
         admin: {
@@ -1714,12 +1730,6 @@
                 openAccountModal(window.currentAccountChildId);
             }
         }, err => showToast('Error leyendo ventas: ' + err.message, 'error')));
-
-        unsubscribers.push(onSnapshot(collection(db, "users"), snap => {
-            state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderUsers();
-            applyUserPermissions();
-        }, err => console.warn('Usuarios colección:', err.message)));
     }
 
     function detachListeners() {
@@ -2238,69 +2248,50 @@
             $('checkinDebtWarning').style.display = 'none';
         }
 
-        // Opciones de Plan Activo
-        if (c.activePlan && c.activePlan.hoursRemaining > 0) {
-            const exp = new Date(c.activePlan.expirationDate + 'T23:59:59');
-            const expired = new Date() > exp;
-            if (!expired) {
-                $('checkinPlanOptionGroup').innerHTML = `
-                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <input type="checkbox" id="checkinUsePlan" checked style="width: 20px; height: 20px; cursor: pointer;" onchange="onCheckinUsePlanChange()">
-                        <div>
-                            <label for="checkinUsePlan" style="font-weight:700; color:#065f46; cursor:pointer; text-transform:none; font-size:0.9rem;">Usar horas de Plan Activo</label>
-                            <div style="font-size:0.8rem; color:#047857;">${c.activePlan.name} (${c.activePlan.hoursRemaining.toFixed(1)}h restantes, máx ${c.activePlan.hoursPerDay}h/día)</div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                $('checkinPlanOptionGroup').innerHTML = `
-                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 12px 16px; color: #991b1b; font-size:0.85rem; margin-bottom: 15px;">
-                        <i class="fas fa-calendar-times"></i> El plan activo de este niño ha expirado.
-                    </div>
-                `;
-            }
-            $('checkinPlanOptionGroup').style.display = 'block';
-        } else {
-            $('checkinPlanOptionGroup').style.display = 'none';
-        }
-
-        window.onCheckinUsePlanChange();
+        onCheckinServiceTypeChange();
         $('checkinForm').style.display = 'block';
     };
 
-    window.onCheckinUsePlanChange = () => {
-        const usePlanCheckbox = $('checkinUsePlan');
-        const standardFields = $('checkinStandardFields');
-        if (usePlanCheckbox && usePlanCheckbox.checked) {
-            standardFields.style.display = 'none';
+    window.onCheckinServiceTypeChange = () => {
+        const type = $('checkinServiceType').value;
+        if (type === 'normal') {
+            $('ciPrepagoGroup').style.display = 'block';
         } else {
-            standardFields.style.display = 'grid';
+            $('ciPrepagoGroup').style.display = 'none';
         }
     };
 
     $('cancelCheckin').onclick = () => {
         $('checkinForm').style.display = 'none';
         $('checkinForm').reset();
+        $('ciChildHeader').style.display = 'none';
+        $('ciChildSearchGroup').style.display = 'block';
         $('noSelectedChild').style.display = 'block';
     };
 
     $('checkinForm').onsubmit = async e => {
         e.preventDefault();
-        const now = new Date();
-        const usePlanCheckbox = $('checkinUsePlan');
-        const usePlan = usePlanCheckbox && usePlanCheckbox.checked;
-        const childId = $('selectedChildId').value;
+        const childId = $('ciChildId').value;
+        const type = $('checkinServiceType').value;
+        if (!childId) return;
+
         const child = state.children.find(c => c.id === childId);
-        
-        let hrs = 0;
-        let limitTime = now;
-        let method = '';
-        
-        if (usePlan && child && child.activePlan) {
-            const plan = child.activePlan;
+        const now = new Date();
+        let limitTime, hrs, method, usePlanIndex = -1;
+
+        if (type.startsWith('plan_')) {
+            usePlanIndex = parseInt(type.split('_')[1]);
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            const plan = activePlans[usePlanIndex];
+            
             hrs = Math.min(plan.hoursPerDay || 2, plan.hoursRemaining || 0);
             limitTime = new Date(now.getTime() + hrs * 3600000);
             method = 'Plan: ' + plan.name;
+        } else if (type === 'cortesia_estancia') {
+            hrs = 2;
+            limitTime = new Date(now.getTime() + hrs * 3600000);
+            method = 'Cortesía';
         } else {
             hrs = parseInt($('hoursSelect').value);
             limitTime = new Date(now.getTime() + hrs * 3600000);
@@ -2312,11 +2303,12 @@
                 childId: childId,
                 entryTime: now.toISOString(),
                 limitTime: limitTime.toISOString(),
-                hoursPaid: hrs,
+                hoursPaid: type === 'normal' ? hrs : 0,
                 method: method,
                 notes: $('checkinNotes').value.trim(),
                 notified: false,
-                usePlan: usePlan || false
+                serviceType: type,
+                usePlanIndex: usePlanIndex
             });
             $('checkinForm').style.display = 'none';
             $('checkinForm').reset();
@@ -2476,11 +2468,15 @@
         let extraTimeStr = '0m';
         let planHoursDeducted = 0;
         
+        let isPlan = s.serviceType && s.serviceType.startsWith('plan_');
+        let isCortesia = s.serviceType === 'cortesia_estancia';
         const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
 
-        if (s.usePlan) {
-            const plan = child.activePlan || {};
-            // Horas facturables con regla de 10 min
+        if (isPlan) {
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            const plan = activePlans[s.usePlanIndex] || {};
+            
             const billableHours = calcBillableHours(durationMinutes);
             const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
@@ -2490,6 +2486,10 @@
             total = extraCharge;
 
             extraTimeStr = extraBillableHours > 0 ? `${extraBillableHours}h extra` : '0m';
+        } else if (isCortesia) {
+            total = 0;
+            extraCharge = 0;
+            extraTimeStr = '0m';
         } else {
             const limit = new Date(s.limitTime);
             const isOver = now > limit;
@@ -2510,9 +2510,11 @@
         $('coChildName').innerText = child.name;
         $('coTotal').innerText = formatMoney(total);
         
-        if (s.usePlan) {
+        if (isPlan) {
             $('coExtraNote').innerText = `Consumo plan: ${planHoursDeducted.toFixed(1)}h deducidas. ` +
-                (extraCharge > 0 ? `Exceso: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}` : 'Sin recargo extra (menos de 10 min sobrantes).');
+                (extraCharge > 0 ? `Exceso: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}` : 'Sin recargo extra.');
+        } else if (isCortesia) {
+            $('coExtraNote').innerText = 'Estancia de cortesía. Sin cobro.';
         } else {
             $('coExtraNote').innerText = extraCharge > 0
                 ? `Tiempo extra: ${extraTimeStr} · Cargo: ${formatMoney(extraCharge)}`
@@ -2555,11 +2557,15 @@
         let extraTimeStr = '0m';
         let planHoursDeducted = 0;
         
+        let isPlan = s.serviceType && s.serviceType.startsWith('plan_');
+        let isCortesia = s.serviceType === 'cortesia_estancia';
         const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
 
-        if (s.usePlan) {
-            const plan = child.activePlan || {};
-            // Horas facturables con regla de 10 min
+        if (isPlan) {
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            const plan = activePlans[s.usePlanIndex] || {};
+            
             const billableHours = calcBillableHours(durationMinutes);
             const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
@@ -2569,6 +2575,10 @@
             total = extraCharge;
 
             extraTimeStr = extraBillableHours > 0 ? `${extraBillableHours}h extra` : '0m';
+        } else if (isCortesia) {
+            total = 0;
+            extraCharge = 0;
+            extraTimeStr = '0m';
         } else {
             const limit = new Date(s.limitTime);
             const isOver = now > limit;
@@ -2585,7 +2595,16 @@
             total = prepaidCost + extraCharge;
         }
 
-        const payMethod = total > 0 ? $('coPayMethod').value : (s.usePlan ? 'Plan' : s.method);
+        const payMethod = total > 0 ? $('coPayMethod').value : (isPlan ? 'Plan' : (isCortesia ? 'Cortesía' : s.method));
+
+        let conceptName = 'Estancia';
+        if (isPlan) {
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            conceptName = `Plan: ${(activePlans[s.usePlanIndex] || {}).name || ''}`;
+        } else if (isCortesia) {
+            conceptName = 'Estancia de Cortesía';
+        }
 
         const log = {
             childId: child.id,
@@ -2602,7 +2621,9 @@
             prepaidCost,
             extraCharge,
             extraTimeStr,
-            usePlan: s.usePlan || false,
+            usePlan: isPlan,
+            serviceType: s.serviceType || 'normal',
+            concept: conceptName,
             planHoursDeducted,
             status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
             paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
@@ -2614,12 +2635,16 @@
             await deleteDoc(doc(db, "sessions", id));
             notifiedLocally.delete(id);
 
-            if (s.usePlan && child.activePlan) {
-                const plan = child.activePlan;
-                const newHours = Math.max(0, plan.hoursRemaining - planHoursDeducted);
-                await updateDoc(doc(db, "kids", child.id), {
-                    "activePlan.hoursRemaining": newHours
-                });
+            if (isPlan && s.usePlanIndex !== undefined) {
+                let activePlans = child.activePlans || [];
+                if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+                if (activePlans[s.usePlanIndex]) {
+                    activePlans[s.usePlanIndex].hoursRemaining = Math.max(0, activePlans[s.usePlanIndex].hoursRemaining - planHoursDeducted);
+                    await updateDoc(doc(db, "kids", child.id), {
+                        activePlans,
+                        activePlan: null
+                    });
+                }
             }
 
             if (payMethod === 'A Cuenta') {
@@ -2638,8 +2663,10 @@
             $('rExit').innerText = formatTimeShort(now);
             $('rDuration').innerText = formatDuration(durationMinutes);
             
-            if (s.usePlan) {
+            if (isPlan) {
                 $('rPrepaid').innerText = `Plan (${planHoursDeducted.toFixed(1)}h consumidas)`;
+            } else if (isCortesia) {
+                $('rPrepaid').innerText = `Cortesía`;
             } else {
                 $('rPrepaid').innerText = `${s.hoursPaid}h (${formatMoney(prepaidCost)})`;
             }
@@ -2666,26 +2693,33 @@
         if (!child) return;
 
         $('acChildName').innerText = child.name;
-        $('acDebtTotal').innerText = formatMoney(child.debt || 0);
+        
+        // Corrección de IDs
+        $('acDebtVal').innerText = formatMoney(child.debt || 0);
+        
+        if (child.debt && child.debt > 0 && child.debtSince) {
+            $('acDebtSinceVal').innerText = new Date(child.debtSince).toLocaleDateString('es-MX');
+        } else {
+            $('acDebtSinceVal').innerText = '-';
+        }
 
-        // Obtener historial de sesiones pendientes de pago
+        // Obtener historial de sesiones y ventas pendientes
         const unpaidSessions = state.history.filter(h => h.childId === childId && h.status === 'pending');
-        // Obtener ventas pendientes de pago
         const unpaidSales = state.sales.filter(s => s.childId === childId && s.status === 'pending');
 
         if (unpaidSessions.length === 0 && unpaidSales.length === 0) {
-            $('acDetailsBody').innerHTML = `<tr><td colspan="4"><div class="empty-state" style="padding:10px;"><p>No hay deudas registradas.</p></div></td></tr>`;
-            $('acPayBtn').style.display = 'none';
-            $('acPayMethodGroup').style.display = 'none';
+            $('acChargesBody').innerHTML = '';
+            $('acPaySection').style.display = 'none';
+            $('acNoDebtMsg').style.display = 'block';
         } else {
+            $('acNoDebtMsg').style.display = 'none';
             let html = '';
             unpaidSessions.forEach(s => {
                 html += `
                     <tr>
                         <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
-                        <td>Tiempo: ${formatDuration(s.durationMinutes)}</td>
+                        <td>Sesión (${formatDuration(s.durationMinutes)})</td>
                         <td>${formatMoney(s.total)}</td>
-                        <td><span class="kid-status-badge danger">Pendiente</span></td>
                     </tr>
                 `;
             });
@@ -2695,13 +2729,11 @@
                         <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
                         <td>${s.concept} (x${s.qty || 1})</td>
                         <td>${formatMoney(s.amount)}</td>
-                        <td><span class="kid-status-badge danger">Pendiente</span></td>
                     </tr>
                 `;
             });
-            $('acDetailsBody').innerHTML = html;
-            $('acPayBtn').style.display = 'block';
-            $('acPayMethodGroup').style.display = 'block';
+            $('acChargesBody').innerHTML = html;
+            $('acPaySection').style.display = 'block';
         }
 
         $('accountModal').style.display = 'flex';
@@ -2809,14 +2841,43 @@
         });
     }
 
+    function getPeriodSales(period) {
+        const now = new Date();
+        return state.sales.filter(s => {
+            const d = new Date(s.date);
+            if (period === 'today') return d.toDateString() === now.toDateString();
+            if (period === 'week') return (now - d) <= 7 * 86400000;
+            if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            return true;
+        });
+    }
+
     function renderCashSummary() {
         const period = $('cashPeriod').value;
         const rows = getPeriodHistory(period);
-        const total = rows.reduce((acc, h) => acc + (h.total || 0), 0);
-        const cash = rows.filter(h => h.method === 'Efectivo').reduce((acc, h) => acc + (h.total || 0), 0);
-        const card = rows.filter(h => h.method !== 'Efectivo' && h.method !== 'A Cuenta').reduce((acc, h) => acc + (h.total || 0), 0);
-        const outstanding = rows.filter(h => h.method === 'A Cuenta' && h.status === 'pending').reduce((acc, h) => acc + (h.total || 0), 0);
-        const visits = rows.length;
+        const salesRows = getPeriodSales(period);
+        
+        const historyTotal = rows.reduce((acc, h) => acc + (h.total || 0), 0);
+        const salesTotal = salesRows.reduce((acc, s) => acc + (s.amount || 0), 0);
+        const total = historyTotal + salesTotal;
+        
+        const cashHistory = rows.filter(h => h.method === 'Efectivo').reduce((acc, h) => acc + (h.total || 0), 0);
+        const cashSales = salesRows.filter(s => s.paymentMethod === 'Efectivo').reduce((acc, s) => acc + (s.amount || 0), 0);
+        const cash = cashHistory + cashSales;
+        
+        const cardHistory = rows.filter(h => h.method === 'Tarjeta').reduce((acc, h) => acc + (h.total || 0), 0);
+        const cardSales = salesRows.filter(s => s.paymentMethod === 'Tarjeta').reduce((acc, s) => acc + (s.amount || 0), 0);
+        const card = cardHistory + cardSales;
+
+        const transferHistory = rows.filter(h => h.method === 'Transferencia').reduce((acc, h) => acc + (h.total || 0), 0);
+        const transferSales = salesRows.filter(s => s.paymentMethod === 'Transferencia').reduce((acc, s) => acc + (s.amount || 0), 0);
+        const transfer = transferHistory + transferSales;
+        
+        const outstandingHistory = rows.filter(h => h.method === 'A Cuenta' && h.status === 'pending').reduce((acc, h) => acc + (h.total || 0), 0);
+        const outstandingSales = salesRows.filter(s => s.paymentMethod === 'A Cuenta' && s.status === 'pending').reduce((acc, s) => acc + (s.amount || 0), 0);
+        const outstanding = outstandingHistory + outstandingSales;
+        
+        const visits = rows.length + salesRows.length;
         const avg = visits > 0 ? (total / visits) : 0;
 
         $('cashSummaryGrid').innerHTML = `
@@ -2829,16 +2890,16 @@
                 <span class="stat-value" style="font-size:1.8rem;color:var(--success);">${formatMoney(cash)}</span>
             </div>
             <div class="stat-card" style="padding:20px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
-                <span class="stat-label"><i class="fas fa-credit-card" style="color:var(--primary-light);"></i> Tarjeta / Transf.</span>
+                <span class="stat-label"><i class="fas fa-credit-card" style="color:var(--primary-light);"></i> Tarjeta</span>
                 <span class="stat-value" style="font-size:1.8rem;color:var(--primary-light);">${formatMoney(card)}</span>
             </div>
             <div class="stat-card" style="padding:20px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
-                <span class="stat-label"><i class="fas fa-exclamation-circle" style="color:var(--danger);"></i> Por Cobrar (A Cuenta)</span>
-                <span class="stat-value" style="font-size:1.8rem;color:var(--danger);">${formatMoney(outstanding)}</span>
+                <span class="stat-label"><i class="fas fa-exchange-alt" style="color:var(--secondary);"></i> Transferencia</span>
+                <span class="stat-value" style="font-size:1.8rem;color:var(--secondary);">${formatMoney(transfer)}</span>
             </div>
             <div class="stat-card" style="padding:20px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
-                <span class="stat-label">Ticket Promedio</span>
-                <span class="stat-value" style="font-size:1.8rem;color:var(--secondary);">${formatMoney(avg)}</span>
+                <span class="stat-label"><i class="fas fa-exclamation-circle" style="color:var(--danger);"></i> Por Cobrar</span>
+                <span class="stat-value" style="font-size:1.8rem;color:var(--danger);">${formatMoney(outstanding)}</span>
             </div>
         `;
     }
@@ -3289,18 +3350,6 @@
         const now = new Date();
 
         try {
-            const activePlan = {
-                planId,
-                name: planName,
-                totalHours,
-                hoursRemaining: totalHours,
-                hoursPerDay,
-                startDate,
-                expirationDate,
-                paymentDate: now.toISOString(),
-                cost
-            };
-
             const saleData = {
                 childId: child.id,
                 childName: child.name,
@@ -3318,7 +3367,23 @@
 
             await addDoc(collection(db, "sales"), saleData);
 
-            const updates = { activePlan };
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) {
+                activePlans.push(child.activePlan);
+            }
+            activePlans.push({
+                planId,
+                name: planName,
+                totalHours,
+                hoursRemaining: totalHours,
+                hoursPerDay,
+                startDate,
+                expirationDate,
+                paymentDate: now.toISOString(),
+                cost
+            });
+
+            const updates = { activePlans, activePlan: null };
             if (payMethod === 'A Cuenta') {
                 updates.debt = (child.debt || 0) + cost;
                 updates.debtSince = child.debtSince ? child.debtSince : now.toISOString();
@@ -3334,42 +3399,98 @@
     };
 
     function renderActivePlansTable() {
-        const kidsWithPlans = state.children.filter(c => c.activePlan && c.activePlan.hoursRemaining > 0);
+        const kidsWithPlans = state.children.filter(c => {
+            if (c.activePlan && c.activePlan.hoursRemaining > 0) return true;
+            if (c.activePlans && c.activePlans.some(p => p.hoursRemaining > 0)) return true;
+            return false;
+        });
+
         if (kidsWithPlans.length === 0) {
             $('activePlansTableBody').innerHTML = `<tr><td colspan="5"><div class="empty-state" style="padding:10px;"><p>No hay planes asignados activos</p></div></td></tr>`;
             return;
         }
 
-        $('activePlansTableBody').innerHTML = kidsWithPlans.map(c => {
-            const plan = c.activePlan;
-            const exp = new Date(plan.expirationDate + 'T23:59:59');
-            const expired = new Date() > exp;
-            return `
-                <tr>
-                    <td data-label="Niño"><strong>${c.name}</strong></td>
-                    <td data-label="Plan">${plan.name}</td>
-                    <td data-label="Restante">${plan.hoursRemaining.toFixed(1)}h / ${plan.totalHours}h</td>
-                    <td data-label="Vence" style="color: ${expired ? 'var(--danger)' : 'inherit'}; font-weight: ${expired ? '700' : 'normal'};">
-                        ${new Date(plan.expirationDate + 'T00:00:00').toLocaleDateString('es-MX')}
-                        ${expired ? ' (Expirado)' : ''}
-                    </td>
-                    <td data-label="Acciones">
-                        <button class="btn btn-danger btn-sm" onclick="cancelChildActivePlan('${c.id}')" title="Cancelar Plan"><i class="fas fa-times-circle"></i> Cancelar</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        let html = '';
+        kidsWithPlans.forEach(c => {
+            let plansToRender = c.activePlans || [];
+            if (c.activePlan && plansToRender.length === 0) plansToRender = [c.activePlan];
+            
+            plansToRender.forEach((plan, index) => {
+                if (plan.hoursRemaining <= 0) return;
+                const exp = new Date(plan.expirationDate + 'T23:59:59');
+                const expired = new Date() > exp;
+                html += `
+                    <tr>
+                        <td data-label="Niño"><strong>${c.name}</strong></td>
+                        <td data-label="Plan">${plan.name}</td>
+                        <td data-label="Restante">${plan.hoursRemaining.toFixed(1)}h / ${plan.totalHours}h</td>
+                        <td data-label="Vence" style="color: ${expired ? 'var(--danger)' : 'inherit'}; font-weight: ${expired ? '700' : 'normal'};">
+                            ${new Date(plan.expirationDate + 'T00:00:00').toLocaleDateString('es-MX')}
+                            ${expired ? ' (Expirado)' : ''}
+                        </td>
+                        <td data-label="Acciones">
+                            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                                <button class="btn btn-outline btn-sm" onclick="editPlanHours('${c.id}', ${index})" title="Ajustar Horas Restantes"><i class="fas fa-edit"></i> Editar Horas</button>
+                                <button class="btn btn-danger btn-sm" onclick="cancelChildActivePlan('${c.id}', ${index})" title="Cancelar Plan"><i class="fas fa-times-circle"></i> Cancelar</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+        $('activePlansTableBody').innerHTML = html;
     }
 
-    window.cancelChildActivePlan = async id => {
-        if (!confirm("¿Quitar el plan de este niño? Se perderán las horas restantes.")) return;
+    window.cancelChildActivePlan = async (id, index) => {
+        if (!confirm("¿Quitar este plan del niño? Se perderán las horas restantes.")) return;
+        const child = state.children.find(c => c.id === id);
+        if (!child) return;
         try {
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            
+            activePlans.splice(index, 1);
+            
             await updateDoc(doc(db, "kids", id), {
+                activePlans,
                 activePlan: null
             });
             showToast("Plan quitado");
         } catch (err) {
             showToast("Error al quitar plan: " + err.message, "error");
+        }
+    };
+
+    window.editPlanHours = async (id, index) => {
+        const child = state.children.find(c => c.id === id);
+        if (!child) return;
+        
+        let activePlans = child.activePlans || [];
+        if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+        
+        const plan = activePlans[index];
+        if (!plan) return;
+        
+        const currentHours = plan.hoursRemaining;
+        const input = prompt(`Ajustar horas disponibles para ${child.name}\n(Plan: ${plan.name})\n\nHoras actuales:`, currentHours);
+        
+        if (input === null) return;
+        
+        const newHours = parseFloat(input);
+        if (isNaN(newHours) || newHours < 0) {
+            return showToast("Cantidad de horas inválida", "error");
+        }
+        
+        activePlans[index].hoursRemaining = newHours;
+        
+        try {
+            await updateDoc(doc(db, "kids", id), {
+                activePlans,
+                activePlan: null
+            });
+            showToast("Horas actualizadas correctamente");
+        } catch (err) {
+            showToast("Error al actualizar horas: " + err.message, "error");
         }
     };
 
@@ -3451,6 +3572,106 @@
         
         pdf.save(`reporte_ventas_${Date.now()}.pdf`);
         showToast("PDF generado");
+    };
+
+    // --- EXPORTACIÓN UNIFICADA (GLOBAL) ---
+    window.exportUnifiedData = (format) => {
+        const fromStr = $('historyFrom').value;
+        const toStr = $('historyTo').value;
+        const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+        const to = toStr ? new Date(toStr + 'T23:59:59') : null;
+
+        let hData = getFilteredHistory().map(h => ({
+            fecha: new Date(h.date),
+            nino: h.childName,
+            tipoServicio: h.concept || 'Estancia',
+            entrada: formatTimeShort(h.entry),
+            salida: formatTimeShort(h.exit),
+            horas: formatDuration(h.durationMinutes),
+            extras: h.extraTimeStr || '--',
+            recogio: h.pickedUpBy || '--',
+            obs: h.notes || 'SIN OBSERVACIONES',
+            pago: h.method || 'EFECTIVO',
+            total: h.total
+        }));
+
+        let sData = state.sales.filter(s => {
+            const d = new Date(s.date);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        }).map(s => ({
+            fecha: new Date(s.date),
+            nino: s.childName || '--',
+            tipoServicio: s.type === 'plan' ? 'PAQUETE' : 'SNACK',
+            entrada: '--',
+            salida: '--',
+            horas: '--',
+            extras: '--',
+            recogio: '--',
+            obs: s.concept || 'SIN OBSERVACIONES',
+            pago: s.paymentMethod || 'EFECTIVO',
+            total: s.amount
+        }));
+
+        let combined = [...hData, ...sData].sort((a, b) => a.fecha - b.fecha);
+
+        if (combined.length === 0) return showToast('No hay datos para exportar con estos filtros', 'error');
+
+        const rows = combined.map(r => [
+            formatDate(r.fecha.toISOString()),
+            r.nino,
+            r.tipoServicio,
+            r.entrada,
+            r.salida,
+            r.horas,
+            r.extras,
+            r.recogio,
+            r.obs,
+            r.pago,
+            r.total === 0 ? '--' : formatMoney(r.total)
+        ]);
+
+        if (format === 'xlsx') {
+            const sheetRows = rows.map(r => ({
+                'FECHA': r[0],
+                'NIÑO': r[1],
+                'TIPO DE SERVICIO': r[2],
+                'HORA DE ENTRADA': r[3],
+                'HORA DE SALIDA': r[4],
+                'TOTAL DE HORAS': r[5],
+                'HORA EXTRA': r[6],
+                'NOMBRE DE QUIÉN RECOGE': r[7],
+                'OBSERVACIONES': r[8],
+                'FORMA DE PAGO': r[9],
+                'TOTAL': r[10] === '--' ? 0 : parseFloat(r[10].replace(/[^0-9.-]+/g, ""))
+            }));
+            const ws = XLSX.utils.json_to_sheet(sheetRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Reporte Global');
+            XLSX.writeFile(wb, `reporte_global_${Date.now()}.xlsx`);
+            showToast('Excel generado');
+        } else if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('landscape');
+            pdf.setFontSize(16);
+            pdf.text(state.config.brandName || 'Ludoteca', 14, 15);
+            pdf.setFontSize(10);
+            pdf.text(`Reporte Global Unificado - Generado: ${formatDate(new Date())}`, 14, 22);
+            pdf.autoTable({
+                startY: 28,
+                head: [['Fecha', 'Niño', 'Tipo', 'Entrada', 'Salida', 'Horas', 'Extras', 'Recogió', 'Obs', 'Pago', 'Total']],
+                body: rows,
+                styles: { fontSize: 7, cellPadding: 1 },
+                headStyles: { fillColor: [30, 74, 118] }
+            });
+            const total = combined.reduce((a, b) => a + (b.total || 0), 0);
+            const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 30;
+            pdf.setFontSize(12);
+            pdf.text(`IMPORTE TOTAL: ${formatMoney(total)}`, 14, finalY + 10);
+            pdf.save(`reporte_global_${Date.now()}.pdf`);
+            showToast('PDF generado');
+        }
     };
 
     // --- EXPORTACIÓN (XLSX / PDF) ---
@@ -3541,8 +3762,9 @@
 
     function updateIncomeToday() {
         const todayStr = new Date().toDateString();
-        const income = state.history.filter(h => new Date(h.date).toDateString() === todayStr).reduce((a, b) => a + (b.total || 0), 0);
-        $('incomeToday').innerText = formatMoney(income);
+        const historyIncome = state.history.filter(h => new Date(h.date).toDateString() === todayStr).reduce((a, b) => a + (b.total || 0), 0);
+        const salesIncome = state.sales.filter(s => new Date(s.date).toDateString() === todayStr).reduce((a, b) => a + (b.amount || 0), 0);
+        $('incomeToday').innerText = formatMoney(historyIncome + salesIncome);
     }
 </script>
 </body>
