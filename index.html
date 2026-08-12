@@ -1470,13 +1470,6 @@
         console.warn("Persistencia offline no disponible:", err.code);
     });
 
-    // Cargar usuarios de forma global (para login de trabajadores en nuevos dispositivos)
-    onSnapshot(collection(db, "users"), snap => {
-        state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if (typeof renderUsers === 'function') renderUsers();
-        if (typeof applyUserPermissions === 'function') applyUserPermissions();
-    }, err => console.warn('No se pudieron cargar usuarios de inicio:', err.message));
-
     const USER_ROLE_PRESETS = {
         admin: {
             view_active: true, manage_checkin: true, manage_checkout: true,
@@ -1524,6 +1517,13 @@
         config: { brandName: 'KinderControlPro', hourlyRate: 50, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
         currentSecureTab: null
     };
+
+    // Cargar usuarios de forma global (para login de trabajadores en nuevos dispositivos)
+    onSnapshot(collection(db, "users"), snap => {
+        state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (typeof renderUsers === 'function') renderUsers();
+        if (typeof applyUserPermissions === 'function') applyUserPermissions();
+    }, err => console.warn('No se pudieron cargar usuarios de inicio:', err.message));
 
     let unsubscribers = [];
     let pendingCheckoutId = null;
@@ -3769,3 +3769,4 @@
 </script>
 </body>
 </html>
+
