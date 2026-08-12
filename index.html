@@ -579,7 +579,14 @@
                         </div>
 
                         <div id="checkinDebtWarning" style="display:none; background: #fee2e2; border: 1px solid #fecaca; border-radius: var(--radius-md); padding: 12px 16px; color: #991b1b; font-size:0.85rem; margin-bottom: 15px;"></div>
-                        <div id="checkinPlanOptionGroup" style="display:none;"></div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label>Tipo de Servicio</label>
+                            <select id="checkinServiceType" onchange="onCheckinServiceTypeChange()">
+                                <option value="normal">Estancia Normal (Por Hora)</option>
+                                <option value="cortesia_estancia">Cortesía (2 horas gratis)</option>
+                            </select>
+                        </div>
 
                         <div class="form-grid" id="checkinStandardFields">
                             <div class="form-group">
@@ -714,6 +721,7 @@
                                 <input type="date" id="salesTo">
                             </div>
                             <button class="btn btn-outline" onclick="generateSalesReportPdf()" style="width:100%; margin-bottom:10px;"><i class="fas fa-file-pdf" style="color:var(--danger);"></i> Descargar PDF de Ventas</button>
+                            <button class="btn btn-danger" onclick="clearSalesHistory()" style="width:100%; margin-bottom:10px;"><i class="fas fa-trash"></i> Eliminar Historial de Ventas</button>
                             <div style="border-top:1px solid var(--border); padding-top:15px; margin-top:15px;">
                                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                                     <span>Ventas Totales:</span>
@@ -796,6 +804,7 @@
                         <button class="btn btn-outline btn-sm" onclick="exportData('filtered', 'xlsx')"><i class="fas fa-file-excel"></i> Excel (Visitas)</button>
                         <button class="btn btn-primary btn-sm" onclick="exportUnifiedData('xlsx')"><i class="fas fa-file-excel"></i> Reporte Global Excel</button>
                         <button class="btn btn-primary btn-sm" onclick="exportUnifiedData('pdf')" style="background-color: var(--danger); border-color: var(--danger);"><i class="fas fa-file-pdf"></i> Reporte Global PDF</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearVisitsHistory()"><i class="fas fa-trash"></i> Borrar Historial</button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -1200,7 +1209,13 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Stock / Cantidad *</label>
-                    <input type="number" id="pStock" required min="0" value="0">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="number" id="pStock" required min="0" value="0" style="flex:1;">
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                            <input type="checkbox" id="pIsInfinite" onchange="document.getElementById('pStock').disabled = this.checked; if(this.checked) document.getElementById('pStock').value = 0;">
+                            Infinito
+                        </label>
+                    </div>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
@@ -1210,6 +1225,12 @@
                     <div class="form-group">
                         <label>Precio de Venta ($) *</label>
                         <input type="number" id="pPrice" required min="0" step="any" placeholder="Precio al que lo vendes">
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <div class="form-group">
+                        <label>Precio Trabajador ($) (Opcional)</label>
+                        <input type="number" id="pEmployeePrice" min="0" step="any" placeholder="Precio especial para trabajadores">
                     </div>
                 </div>
             </div>
@@ -1346,6 +1367,16 @@
                         <label>Precio Unitario</label>
                         <input type="text" id="spPriceVal" readonly style="background:#f1f5f9;">
                     </div>
+                </div>
+                <div class="form-group" style="margin-top: 15px;" id="spEmployeeSaleGroup">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="spIsEmployeeSale" onchange="onSellProductChange()"> 
+                        Aplicar Precio de Trabajador (si aplica)
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:8px;">
+                        <input type="checkbox" id="spIsCourtesy" onchange="onSellProductChange()"> 
+                        Marcar como Cortesía (Gratis)
+                    </label>
                 </div>
                 <div style="margin-top: 15px; font-size: 1.2rem; font-weight: 800; color: var(--primary); text-align: right;">
                     Total: <span id="spTotalVal">$0.00</span>
@@ -1726,6 +1757,7 @@
         unsubscribers.push(onSnapshot(query(collection(db, "sales"), orderBy("date", "desc")), snap => {
             state.sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderSalesReport();
+            updateIncomeToday();
             if (window.currentAccountChildId) {
                 openAccountModal(window.currentAccountChildId);
             }
@@ -2248,30 +2280,48 @@
             $('checkinDebtWarning').style.display = 'none';
         }
 
+        let serviceOptions = '<option value="normal">Estancia Normal (Por Hora)</option><option value="cortesia_estancia">Cortesía (2 horas gratis)</option>';
+        let activePlans = c.activePlans || [];
+        if (c.activePlan && activePlans.length === 0) activePlans = [c.activePlan];
+        
+        activePlans.forEach((p, idx) => {
+            if(p.hoursRemaining > 0) {
+                serviceOptions += `<option value="plan_${idx}">Usar Plan: ${p.name} (${p.hoursRemaining.toFixed(1)}h rest.)</option>`;
+            }
+        });
+        
+        const serviceTypeEl = $('checkinServiceType');
+        if(serviceTypeEl) {
+            serviceTypeEl.innerHTML = serviceOptions;
+        }
+
         onCheckinServiceTypeChange();
         $('checkinForm').style.display = 'block';
     };
 
     window.onCheckinServiceTypeChange = () => {
-        const type = $('checkinServiceType').value;
-        if (type === 'normal') {
-            $('ciPrepagoGroup').style.display = 'block';
-        } else {
-            $('ciPrepagoGroup').style.display = 'none';
+        const serviceTypeEl = $('checkinServiceType');
+        if(!serviceTypeEl) return;
+        const type = serviceTypeEl.value;
+        const standardFields = $('checkinStandardFields');
+        if(standardFields) {
+            if (type === 'normal') {
+                standardFields.style.display = 'grid';
+            } else {
+                standardFields.style.display = 'none';
+            }
         }
     };
 
     $('cancelCheckin').onclick = () => {
         $('checkinForm').style.display = 'none';
         $('checkinForm').reset();
-        $('ciChildHeader').style.display = 'none';
-        $('ciChildSearchGroup').style.display = 'block';
         $('noSelectedChild').style.display = 'block';
     };
 
     $('checkinForm').onsubmit = async e => {
         e.preventDefault();
-        const childId = $('ciChildId').value;
+        const childId = $('selectedChildId').value;
         const type = $('checkinServiceType').value;
         if (!childId) return;
 
@@ -2351,6 +2401,7 @@
                         <div class="kid-info-main">
                             <h3>${child.name}</h3>
                             <small>${s.hoursPaid > 0 ? s.hoursPaid + 'h pagadas · ' : ''}${s.method}</small>
+                            ${s.customExtraCost ? `<small style="display:block; color:var(--success);">+${formatMoney(s.customExtraCost)} extra cobrado</small>` : ''}
                             ${debtWarning}
                             ${planInfo}
                         </div>
@@ -2429,18 +2480,29 @@
     }
 
     window.extendTime = async id => {
-        const h = prompt("¿Cuántas horas extra se van a cobrar?", "1");
-        if (!h || isNaN(h) || parseFloat(h) <= 0) return;
         const s = state.activeSessions.find(x => x.id === id);
         if (!s) return;
+        
+        const h = prompt("¿Cuántas horas extra se van a agregar al cronómetro?", "1");
+        if (!h || isNaN(h) || parseFloat(h) <= 0) return;
+        
+        const child = state.children.find(c => c.id === s.childId) || {};
+        const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
+        const suggestedCost = parseFloat(h) * ratePerHour;
+        
+        const costStr = prompt(`¿Qué costo se va a cobrar por estas ${h} hora(s)?`, suggestedCost.toString());
+        if (costStr === null || isNaN(costStr) || parseFloat(costStr) < 0) return;
+        const cost = parseFloat(costStr);
+
         try {
             await updateDoc(doc(db, "sessions", id), {
                 limitTime: new Date(new Date(s.limitTime).getTime() + h * 3600000).toISOString(),
-                hoursPaid: s.hoursPaid + parseFloat(h),
+                extraHoursAdded: (s.extraHoursAdded || 0) + parseFloat(h),
+                customExtraCost: (s.customExtraCost || 0) + cost,
                 notified: false
             });
             notifiedLocally.delete(id);
-            showToast('Tiempo extendido');
+            showToast('Tiempo y costo extendidos');
         } catch (err) {
             showToast("No se pudo extender: " + err.message, "error");
         }
@@ -2461,6 +2523,7 @@
         const now = new Date();
         const entry = new Date(s.entryTime);
         const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
+        const adjustedDurationMinutes = Math.max(0, durationMinutes - (s.extraHoursAdded || 0) * 60);
         
         let prepaidCost = 0;
         let extraCharge = 0;
@@ -2477,7 +2540,7 @@
             if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
             const plan = activePlans[s.usePlanIndex] || {};
             
-            const billableHours = calcBillableHours(durationMinutes);
+            const billableHours = calcBillableHours(adjustedDurationMinutes);
             const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
 
@@ -2502,8 +2565,13 @@
                 const extraMins = overMinutes % 60;
                 extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
             }
-            prepaidCost = s.hoursPaid * state.config.hourlyRate;
+            prepaidCost = (s.hoursPaid || 0) * state.config.hourlyRate;
             total = prepaidCost + extraCharge;
+        }
+
+        if (s.customExtraCost) {
+            extraCharge += s.customExtraCost;
+            total += s.customExtraCost;
         }
 
         pendingCheckoutId = id;
@@ -2550,6 +2618,7 @@
         const now = new Date();
         const entry = new Date(s.entryTime);
         const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
+        const adjustedDurationMinutes = Math.max(0, durationMinutes - (s.extraHoursAdded || 0) * 60);
         
         let prepaidCost = 0;
         let extraCharge = 0;
@@ -2566,7 +2635,7 @@
             if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
             const plan = activePlans[s.usePlanIndex] || {};
             
-            const billableHours = calcBillableHours(durationMinutes);
+            const billableHours = calcBillableHours(adjustedDurationMinutes);
             const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
 
@@ -2591,8 +2660,13 @@
                 const extraMins = overMinutes % 60;
                 extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
             }
-            prepaidCost = s.hoursPaid * state.config.hourlyRate;
+            prepaidCost = (s.hoursPaid || 0) * state.config.hourlyRate;
             total = prepaidCost + extraCharge;
+        }
+
+        if (s.customExtraCost) {
+            extraCharge += s.customExtraCost;
+            total += s.customExtraCost;
         }
 
         const payMethod = total > 0 ? $('coPayMethod').value : (isPlan ? 'Plan' : (isCortesia ? 'Cortesía' : s.method));
@@ -2800,6 +2874,32 @@
         });
     }
 
+    window.clearVisitsHistory = async () => {
+        if (state.history.length === 0) return showToast("No hay historial de visitas para eliminar", "error");
+        
+        const confirmPhrase = "BORRAR VISITAS";
+        const input = prompt(`ADVERTENCIA: Esta acción es irreversible.\nSe borrará TODO el historial de visitas registradas permanentemente.\nSi estás seguro, escribe "${confirmPhrase}" para continuar:`);
+        
+        if (input !== confirmPhrase) {
+            return showToast("Operación cancelada", "error");
+        }
+
+        try {
+            const btn = document.querySelector('button[onclick="clearVisitsHistory()"]');
+            if (btn) btn.disabled = true;
+            
+            await Promise.all(state.history.map(h => deleteDoc(doc(db, "history", h.id))));
+            
+            showToast("Historial de visitas eliminado correctamente");
+            
+            if (btn) btn.disabled = false;
+        } catch (err) {
+            showToast("Error al borrar historial: " + err.message, "error");
+            const btn = document.querySelector('button[onclick="clearVisitsHistory()"]');
+            if (btn) btn.disabled = false;
+        }
+    };
+
     function renderHistory() {
         const rows = getFilteredHistory();
         if (rows.length === 0) {
@@ -2965,6 +3065,8 @@
         $('productModalTitle').innerText = "Nuevo Producto";
         $('editProductId').value = '';
         $('productForm').reset();
+        if ($('pIsInfinite')) $('pIsInfinite').checked = false;
+        if ($('pStock')) $('pStock').disabled = false;
         $('productModal').style.display = 'flex';
     };
     window.closeProductModal = () => $('productModal').style.display = 'none';
@@ -2972,12 +3074,15 @@
     $('productForm').onsubmit = async e => {
         e.preventDefault();
         const id = $('editProductId').value;
+        const isInf = $('pIsInfinite') ? $('pIsInfinite').checked : false;
         const data = {
             name: $('pName').value.trim(),
             categoryId: $('pCategorySelect').value,
-            stock: parseInt($('pStock').value),
+            isInfinite: isInf,
+            stock: isInf ? 0 : parseInt($('pStock').value),
             cost: parseFloat($('pCost').value),
-            price: parseFloat($('pPrice').value)
+            price: parseFloat($('pPrice').value),
+            employeePrice: $('pEmployeePrice').value !== '' ? parseFloat($('pEmployeePrice').value) : null
         };
         try {
             if (id) {
@@ -2998,9 +3103,12 @@
         $('editProductId').value = p.id;
         $('pName').value = p.name || '';
         $('pCategorySelect').value = p.categoryId || '';
+        if ($('pIsInfinite')) $('pIsInfinite').checked = !!p.isInfinite;
+        $('pStock').disabled = !!p.isInfinite;
         $('pStock').value = p.stock || 0;
         $('pCost').value = p.cost || 0;
         $('pPrice').value = p.price || 0;
+        $('pEmployeePrice').value = p.employeePrice !== undefined && p.employeePrice !== null ? p.employeePrice : '';
         $('productModalTitle').innerText = "Editar Producto";
         $('productModal').style.display = 'flex';
     };
@@ -3047,11 +3155,14 @@
                 <tr>
                     <td data-label="Producto"><strong>${p.name}</strong></td>
                     <td data-label="Categoría">${category.name}</td>
-                    <td data-label="Stock" style="color: ${p.stock <= 2 ? 'var(--danger)' : 'inherit'}; font-weight: ${p.stock <= 2 ? '700' : 'normal'};">
-                        ${p.stock}
+                    <td data-label="Stock" style="color: ${(!p.isInfinite && p.stock <= 2) ? 'var(--danger)' : 'inherit'}; font-weight: ${(!p.isInfinite && p.stock <= 2) ? '700' : 'normal'};">
+                        ${p.isInfinite ? '<i class="fas fa-infinity" title="Infinito"></i>' : p.stock}
                     </td>
                     <td data-label="Costo Compra">${formatMoney(p.cost)}</td>
-                    <td data-label="Precio Venta">${formatMoney(p.price)}</td>
+                    <td data-label="Precio Venta">
+                        ${formatMoney(p.price)}
+                        ${p.employeePrice !== undefined && p.employeePrice !== null ? `<br><small style="color:var(--text-muted)">Trabajador: ${formatMoney(p.employeePrice)}</small>` : ''}
+                    </td>
                     <td data-label="Acciones">
                         <div style="display:flex; gap:5px;">
                             ${actionButtons}
@@ -3087,6 +3198,8 @@
             $('spPayMethod').value = 'Efectivo';
         }
         $('sellProductForm').reset();
+        if ($('spIsEmployeeSale')) $('spIsEmployeeSale').checked = false;
+        if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
         $('spStockLabel').innerText = '-';
         $('spPriceVal').value = '';
         $('spTotalVal').innerText = '$0.00';
@@ -3127,9 +3240,16 @@
         const prodId = $('spProductSelect').value;
         const p = state.products.find(x => x.id === prodId);
         if (p) {
-            $('spStockLabel').innerText = p.stock;
-            $('spPriceVal').value = p.price;
-            $('spQuantity').max = p.stock;
+            $('spStockLabel').innerHTML = p.isInfinite ? '&infin;' : p.stock;
+            let finalPrice = p.price;
+            if ($('spIsEmployeeSale') && $('spIsEmployeeSale').checked && p.employeePrice !== undefined && p.employeePrice !== null) {
+                finalPrice = p.employeePrice;
+            }
+            if ($('spIsCourtesy') && $('spIsCourtesy').checked) {
+                finalPrice = 0;
+            }
+            $('spPriceVal').value = finalPrice;
+            $('spQuantity').max = p.isInfinite ? 99999 : p.stock;
             updateSpTotal();
         } else {
             $('spStockLabel').innerText = '-';
@@ -3152,7 +3272,7 @@
 
         const qty = parseInt($('spQuantity').value);
         if (isNaN(qty) || qty <= 0) return showToast("Cantidad no válida", "error");
-        if (qty > p.stock) return showToast("Stock insuficiente", "error");
+        if (!p.isInfinite && qty > p.stock) return showToast("Stock insuficiente", "error");
 
         const childId = $('spChildId').value || $('spChildSelect').value;
         const child = childId ? state.children.find(c => c.id === childId) : null;
@@ -3163,30 +3283,34 @@
         }
 
         const now = new Date();
-        const totalAmount = qty * p.price;
+        const actualPrice = parseFloat($('spPriceVal').value);
+        const totalAmount = qty * actualPrice;
         const totalCost = qty * (p.cost || 0);
+        const isCourtesy = $('spIsCourtesy') && $('spIsCourtesy').checked;
 
         try {
             const saleData = {
                 childId: child ? child.id : '',
                 childName: child ? child.name : 'Venta de Mostrador',
                 type: 'product',
-                concept: `Compra: ${p.name}`,
+                concept: isCourtesy ? `Cortesía: ${p.name}` : `Compra: ${p.name}`,
                 qty: qty,
-                price: p.price,
+                price: actualPrice,
                 cost: totalCost,
                 amount: totalAmount,
                 date: now.toISOString(),
-                status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
-                paymentMethod: payMethod,
-                paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
+                status: (payMethod === 'A Cuenta' && !isCourtesy) ? 'pending' : 'paid',
+                paymentMethod: isCourtesy ? 'Cortesía' : payMethod,
+                paymentDate: (payMethod === 'A Cuenta' && !isCourtesy) ? null : now.toISOString()
             };
 
             await addDoc(collection(db, "sales"), saleData);
 
-            await updateDoc(doc(db, "products", p.id), {
-                stock: p.stock - qty
-            });
+            if (!p.isInfinite) {
+                await updateDoc(doc(db, "products", p.id), {
+                    stock: p.stock - qty
+                });
+            }
 
             if (payMethod === 'A Cuenta' && child) {
                 const newDebt = (child.debt || 0) + totalAmount;
@@ -3519,6 +3643,32 @@
         $('repNetProfit').style.color = netProfit < 0 ? 'var(--danger)' : 'var(--success)';
     }
 
+    window.clearSalesHistory = async () => {
+        if (state.sales.length === 0) return showToast("No hay historial de ventas para eliminar", "error");
+        
+        const confirmPhrase = "BORRAR VENTAS";
+        const input = prompt(`ADVERTENCIA: Esta acción es irreversible.\nSe borrará TODO el historial de ventas registradas permanentemente.\nSi estás seguro, escribe "${confirmPhrase}" para continuar:`);
+        
+        if (input !== confirmPhrase) {
+            return showToast("Operación cancelada", "error");
+        }
+
+        try {
+            const btn = document.querySelector('button[onclick="clearSalesHistory()"]');
+            if (btn) btn.disabled = true;
+            
+            await Promise.all(state.sales.map(s => deleteDoc(doc(db, "sales", s.id))));
+            
+            showToast("Historial de ventas eliminado correctamente");
+            
+            if (btn) btn.disabled = false;
+        } catch (err) {
+            showToast("Error al borrar historial: " + err.message, "error");
+            const btn = document.querySelector('button[onclick="clearSalesHistory()"]');
+            if (btn) btn.disabled = false;
+        }
+    };
+
     window.generateSalesReportPdf = () => {
         const fromStr = $('salesFrom').value;
         const toStr = $('salesTo').value;
@@ -3769,4 +3919,5 @@
 </script>
 </body>
 </html>
+
 
