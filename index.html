@@ -569,12 +569,17 @@
                     </div>
 
                     <form id="checkinForm" style="display: none;">
-                        <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
-                            <div class="logo-icon" style="background: var(--primary);"><i class="fas fa-user"></i></div>
-                            <div>
-                                <div id="selectedChildName" style="font-weight: 800; font-size: 1.2rem;">-</div>
-                                <div id="selectedChildParent" style="font-size: 0.9rem; color: var(--text-muted);">-</div>
+                        <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="logo-icon" style="background: var(--primary);"><i class="fas fa-user"></i></div>
+                                <div>
+                                    <div id="selectedChildName" style="font-weight: 800; font-size: 1.2rem;">-</div>
+                                    <div id="selectedChildParent" style="font-size: 0.9rem; color: var(--text-muted);">-</div>
+                                </div>
                             </div>
+                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAccount" onclick="if($('selectedChildId').value) openAccountModal($('selectedChildId').value)">
+                                <i class="fas fa-wallet" style="color:var(--primary);"></i> Estado de Cuenta
+                            </button>
                             <input type="hidden" id="selectedChildId">
                         </div>
 
@@ -603,9 +608,17 @@
                                 <select id="payMethod">
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Tarjeta">Tarjeta</option>
-<option value="Transferencia">Transferencia</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Pendiente">Pendiente de Pago</option>
+                                    <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="form-group" id="checkinPlanFields" style="display: none; margin-bottom: 15px;">
+                            <label>Horas a Usar del Plan (Sin decimales) *</label>
+                            <input type="number" id="planHoursInput" min="1" step="1" placeholder="Ej: 1, 2, 3...">
+                            <small class="hint" id="planHoursHint" style="color: var(--text-muted); font-size: 0.8rem;"></small>
                         </div>
                         <div class="form-group" style="margin-bottom: 20px;">
                             <label>Observaciones de Entrada</label>
@@ -1121,7 +1134,8 @@
                 <select id="coPayMethod" required>
                     <option value="Efectivo">Efectivo</option>
                     <option value="Tarjeta">Tarjeta</option>
-<option value="Transferencia">Transferencia</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Pendiente">Pendiente de Pago</option>
                     <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
                 </select>
             </div>
@@ -1319,9 +1333,17 @@
                     <select id="apPayMethod" required>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
-<option value="Transferencia">Transferencia</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Pendiente">Pendiente de Pago</option>
                         <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
                     </select>
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; text-transform:none;">
+                        <input type="checkbox" id="apIncludeInIncome" checked style="width:18px; height:18px;">
+                        Sumar cobro al importe diario / corte de caja
+                    </label>
+                    <small class="hint" style="margin-left: 26px; font-size:0.8rem; color:var(--text-muted);">Desmarca esta opción si deseas asignar el paquete sin afectar el total de ingresos del día.</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1387,6 +1409,7 @@
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
 <option value="Transferencia">Transferencia</option>
+                        <option value="Pendiente">Pendiente de Pago</option>
                         <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
                     </select>
                 </div>
@@ -1448,7 +1471,7 @@
 <option value="Transferencia">Transferencia</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" onclick="payDebt()" style="height: 48px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
+                    <button id="acPayBtn" type="button" class="btn btn-primary" onclick="payDebt()" style="height: 48px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
                 </div>
             </div>
             <div id="acNoDebtMsg" class="empty-state" style="padding: 15px; display: none;">
@@ -2274,7 +2297,13 @@
 
         // Alerta de Adeudo
         if (c.debt && c.debt > 0) {
-            $('checkinDebtWarning').innerHTML = `<i class="fas fa-exclamation-triangle"></i> <strong>Adeudo pendiente:</strong> Debe ${formatMoney(c.debt)} desde ${new Date(c.debtSince).toLocaleDateString('es-MX')}.`;
+            const dateStr = c.debtSince ? new Date(c.debtSince).toLocaleDateString('es-MX') : '-';
+            $('checkinDebtWarning').innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span><i class="fas fa-exclamation-triangle"></i> <strong>Adeudo pendiente:</strong> Debe ${formatMoney(c.debt)} desde ${dateStr}.</span>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="openAccountModal('${c.id}')"><i class="fas fa-wallet"></i> Ver / Liquidar Deuda</button>
+                </div>
+            `;
             $('checkinDebtWarning').style.display = 'block';
         } else {
             $('checkinDebtWarning').style.display = 'none';
@@ -2304,12 +2333,33 @@
         if(!serviceTypeEl) return;
         const type = serviceTypeEl.value;
         const standardFields = $('checkinStandardFields');
-        if(standardFields) {
-            if (type === 'normal') {
-                standardFields.style.display = 'grid';
-            } else {
-                standardFields.style.display = 'none';
+        const planFields = $('checkinPlanFields');
+
+        if (type === 'normal') {
+            if(standardFields) standardFields.style.display = 'grid';
+            if(planFields) planFields.style.display = 'none';
+        } else if (type.startsWith('plan_')) {
+            if(standardFields) standardFields.style.display = 'none';
+            if(planFields) planFields.style.display = 'block';
+
+            const usePlanIndex = parseInt(type.split('_')[1]);
+            const childId = $('selectedChildId').value;
+            const child = state.children.find(c => c.id === childId);
+            if (child) {
+                let activePlans = child.activePlans || [];
+                if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+                const plan = activePlans[usePlanIndex];
+                if (plan) {
+                    const defaultHrs = Math.max(1, Math.floor(Math.min(plan.hoursPerDay || 2, plan.hoursRemaining || 1)));
+                    if ($('planHoursInput')) $('planHoursInput').value = defaultHrs;
+                    if ($('planHoursHint')) {
+                        $('planHoursHint').innerText = `Disponibles en el plan: ${Math.floor(plan.hoursRemaining || 0)}h (Límite diario sugerido: ${plan.hoursPerDay || 2}h)`;
+                    }
+                }
             }
+        } else {
+            if(standardFields) standardFields.style.display = 'none';
+            if(planFields) planFields.style.display = 'none';
         }
     };
 
@@ -2335,9 +2385,19 @@
             if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
             const plan = activePlans[usePlanIndex];
             
-            hrs = Math.min(plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            const rawVal = $('planHoursInput') ? $('planHoursInput').value.trim() : '';
+            hrs = parseInt(rawVal, 10);
+
+            if (isNaN(hrs) || hrs <= 0 || !Number.isInteger(Number(rawVal))) {
+                return showToast("Ingresa un número entero de horas válido (sin decimales)", "error");
+            }
+            const maxAvail = Math.floor(plan.hoursRemaining || 0);
+            if (hrs > maxAvail) {
+                return showToast(`El plan solo cuenta con ${maxAvail} hora(s) disponible(s)`, "error");
+            }
+
             limitTime = new Date(now.getTime() + hrs * 3600000);
-            method = 'Plan: ' + plan.name;
+            method = 'Plan: ' + plan.name + ` (${hrs}h)`;
         } else if (type === 'cortesia_estancia') {
             hrs = 2;
             limitTime = new Date(now.getTime() + hrs * 3600000);
@@ -2354,6 +2414,7 @@
                 entryTime: now.toISOString(),
                 limitTime: limitTime.toISOString(),
                 hoursPaid: type === 'normal' ? hrs : 0,
+                selectedPlanHours: type.startsWith('plan_') ? hrs : null,
                 method: method,
                 notes: $('checkinNotes').value.trim(),
                 notified: false,
@@ -2394,6 +2455,7 @@
             let btnProd = perms.use_store ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="openSellModal('${s.childId}')" title="Vender Producto"><i class="fas fa-cookie-bite"></i> + Prod</button>` : '';
             let btnExtend = (perms.manage_checkin || perms.manage_checkout) ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>` : '';
             let btnCheckout = perms.manage_checkout ? `<button class="btn btn-primary btn-sm" style="flex:1; min-width:80px;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>` : '';
+            let btnAccount = `<button class="btn btn-outline btn-sm" style="flex:1; min-width:110px;" onclick="openAccountModal('${s.childId}')" title="Estado de Cuenta"><i class="fas fa-wallet" style="color:${child.debt > 0 ? 'var(--danger)' : 'var(--primary)'};"></i> Estado de Cuenta</button>`;
 
             return `
                 <div class="kid-card" id="card-${s.id}">
@@ -2412,6 +2474,7 @@
                         <div class="timer" id="timer-${s.id}" data-limit="${s.limitTime}" data-id="${s.id}">00:00:00</div>
                     </div>
                     <div class="kid-actions" style="flex-wrap:wrap; gap:8px;">
+                        ${btnAccount}
                         ${btnProd}
                         ${btnExtend}
                         ${btnCheckout}
@@ -2636,7 +2699,8 @@
             const plan = activePlans[s.usePlanIndex] || {};
             
             const billableHours = calcBillableHours(adjustedDurationMinutes);
-            const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            const allowedCap = s.selectedPlanHours || s.hoursPaid || plan.hoursPerDay || 2;
+            const maxDeduct = Math.min(billableHours, allowedCap, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
 
             const extraBillableHours = Math.max(0, billableHours - planHoursDeducted);
@@ -2699,8 +2763,8 @@
             serviceType: s.serviceType || 'normal',
             concept: conceptName,
             planHoursDeducted,
-            status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
-            paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
+            status: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? 'pending' : 'paid',
+            paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString()
         };
 
         $('coConfirmBtn').disabled = true;
@@ -2721,7 +2785,7 @@
                 }
             }
 
-            if (payMethod === 'A Cuenta') {
+            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
                 const newDebt = (child.debt || 0) + total;
                 const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
                 await updateDoc(doc(db, "kids", child.id), {
@@ -2747,7 +2811,7 @@
             $('rExtra').innerText = extraCharge > 0 ? `${extraTimeStr} (${formatMoney(extraCharge)})` : 'Ninguno';
             $('rPickedUp').innerText = pickedUpBy;
             $('rTotal').innerText = formatMoney(total);
-            $('rFooter').innerText = (state.config.footerMsg || '') + (payMethod === 'A Cuenta' ? '\n* CARGADO A CUENTA *' : '');
+            $('rFooter').innerText = (state.config.footerMsg || '') + ((payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? '\n* PAGO PENDIENTE / CARGADO A CUENTA *' : '');
 
             closeCheckoutModal();
             $('receiptModal').style.display = 'flex';
@@ -2767,21 +2831,24 @@
         if (!child) return;
 
         $('acChildName').innerText = child.name;
+        if ($('acChildParent')) {
+            $('acChildParent').innerText = `Tutor: ${child.parentName || '-'} · Tel: ${child.phone || '-'}`;
+        }
         
-        // Corrección de IDs
-        $('acDebtVal').innerText = formatMoney(child.debt || 0);
+        const totalDebt = parseFloat(child.debt || 0);
+        $('acDebtVal').innerText = formatMoney(totalDebt);
         
-        if (child.debt && child.debt > 0 && child.debtSince) {
+        if (totalDebt > 0 && child.debtSince) {
             $('acDebtSinceVal').innerText = new Date(child.debtSince).toLocaleDateString('es-MX');
         } else {
             $('acDebtSinceVal').innerText = '-';
         }
 
         // Obtener historial de sesiones y ventas pendientes
-        const unpaidSessions = state.history.filter(h => h.childId === childId && h.status === 'pending');
-        const unpaidSales = state.sales.filter(s => s.childId === childId && s.status === 'pending');
+        const unpaidSessions = state.history.filter(h => h.childId === childId && (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid')));
+        const unpaidSales = state.sales.filter(s => s.childId === childId && (s.status === 'pending' || ((s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente') && s.status !== 'paid')));
 
-        if (unpaidSessions.length === 0 && unpaidSales.length === 0) {
+        if (totalDebt <= 0 && unpaidSessions.length === 0 && unpaidSales.length === 0) {
             $('acChargesBody').innerHTML = '';
             $('acPaySection').style.display = 'none';
             $('acNoDebtMsg').style.display = 'block';
@@ -2789,23 +2856,34 @@
             $('acNoDebtMsg').style.display = 'none';
             let html = '';
             unpaidSessions.forEach(s => {
+                const sessionDate = s.date || s.exit || Date.now();
                 html += `
                     <tr>
-                        <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
-                        <td>Sesión (${formatDuration(s.durationMinutes)})</td>
+                        <td>${new Date(sessionDate).toLocaleDateString('es-MX')}</td>
+                        <td>Estancia / Sesión (${formatDuration(s.durationMinutes)})</td>
                         <td>${formatMoney(s.total)}</td>
                     </tr>
                 `;
             });
             unpaidSales.forEach(s => {
+                const saleDate = s.date || Date.now();
                 html += `
                     <tr>
-                        <td>${new Date(s.date).toLocaleDateString('es-MX')}</td>
-                        <td>${s.concept} (x${s.qty || 1})</td>
+                        <td>${new Date(saleDate).toLocaleDateString('es-MX')}</td>
+                        <td>${s.concept || 'Venta'} (x${s.qty || 1})</td>
                         <td>${formatMoney(s.amount)}</td>
                     </tr>
                 `;
             });
+            if (unpaidSessions.length === 0 && unpaidSales.length === 0 && totalDebt > 0) {
+                html += `
+                    <tr>
+                        <td>${child.debtSince ? new Date(child.debtSince).toLocaleDateString('es-MX') : '-'}</td>
+                        <td>Saldo Pendiente de Pago</td>
+                        <td>${formatMoney(totalDebt)}</td>
+                    </tr>
+                `;
+            }
             $('acChargesBody').innerHTML = html;
             $('acPaySection').style.display = 'block';
         }
@@ -2820,15 +2898,24 @@
 
     window.payDebt = async () => {
         const childId = window.currentAccountChildId;
+        if (!childId) return;
         const child = state.children.find(c => c.id === childId);
-        if (!child || !child.debt) return;
+        if (!child) return;
 
-        const payMethod = $('acPayMethod').value;
+        const unpaidSessions = state.history.filter(h => h.childId === childId && (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid')));
+        const unpaidSales = state.sales.filter(s => s.childId === childId && (s.status === 'pending' || ((s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente') && s.status !== 'paid')));
+        const currentDebt = parseFloat(child.debt || 0);
+
+        if (currentDebt <= 0 && unpaidSessions.length === 0 && unpaidSales.length === 0) {
+            showToast("No hay deudas pendientes por liquidar", "warning");
+            return;
+        }
+
+        const payMethod = $('acPayMethod') ? $('acPayMethod').value : 'Efectivo';
         const now = new Date().toISOString();
 
-        $('acPayBtn').disabled = true;
+        if ($('acPayBtn')) $('acPayBtn').disabled = true;
         try {
-            const unpaidSales = state.sales.filter(s => s.childId === childId && s.status === 'pending');
             for (const s of unpaidSales) {
                 await updateDoc(doc(db, "sales", s.id), {
                     status: 'paid',
@@ -2837,7 +2924,6 @@
                 });
             }
 
-            const unpaidSessions = state.history.filter(h => h.childId === childId && h.status === 'pending');
             for (const s of unpaidSessions) {
                 await updateDoc(doc(db, "history", s.id), {
                     status: 'paid',
@@ -2856,7 +2942,7 @@
         } catch (err) {
             showToast("Error al liquidar deuda: " + err.message, "error");
         } finally {
-            $('acPayBtn').disabled = false;
+            if ($('acPayBtn')) $('acPayBtn').disabled = false;
         }
     };
 
@@ -2944,6 +3030,7 @@
     function getPeriodSales(period) {
         const now = new Date();
         return state.sales.filter(s => {
+            if (s.includeInIncome === false) return false;
             const d = new Date(s.date);
             if (period === 'today') return d.toDateString() === now.toDateString();
             if (period === 'week') return (now - d) <= 7 * 86400000;
@@ -2973,8 +3060,8 @@
         const transferSales = salesRows.filter(s => s.paymentMethod === 'Transferencia').reduce((acc, s) => acc + (s.amount || 0), 0);
         const transfer = transferHistory + transferSales;
         
-        const outstandingHistory = rows.filter(h => h.method === 'A Cuenta' && h.status === 'pending').reduce((acc, h) => acc + (h.total || 0), 0);
-        const outstandingSales = salesRows.filter(s => s.paymentMethod === 'A Cuenta' && s.status === 'pending').reduce((acc, s) => acc + (s.amount || 0), 0);
+        const outstandingHistory = rows.filter(h => (h.status === 'pending' || h.method === 'A Cuenta' || h.method === 'Pendiente') && h.status !== 'paid').reduce((acc, h) => acc + (h.total || 0), 0);
+        const outstandingSales = salesRows.filter(s => (s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente' || s.status === 'pending') && s.status !== 'paid').reduce((acc, s) => acc + (s.amount || 0), 0);
         const outstanding = outstandingHistory + outstandingSales;
         
         const visits = rows.length + salesRows.length;
@@ -3277,6 +3364,8 @@
         const childId = $('spChildId').value || $('spChildSelect').value;
         const child = childId ? state.children.find(c => c.id === childId) : null;
         const payMethod = $('spPayMethod').value;
+        const isCourtesy = $('spIsCourtesy') && $('spIsCourtesy').checked;
+        const isPending = (payMethod === 'A Cuenta' || payMethod === 'Pendiente') && !isCourtesy;
 
         if (payMethod === 'A Cuenta' && !child) {
             return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
@@ -3286,7 +3375,6 @@
         const actualPrice = parseFloat($('spPriceVal').value);
         const totalAmount = qty * actualPrice;
         const totalCost = qty * (p.cost || 0);
-        const isCourtesy = $('spIsCourtesy') && $('spIsCourtesy').checked;
 
         try {
             const saleData = {
@@ -3299,9 +3387,9 @@
                 cost: totalCost,
                 amount: totalAmount,
                 date: now.toISOString(),
-                status: (payMethod === 'A Cuenta' && !isCourtesy) ? 'pending' : 'paid',
+                status: isPending ? 'pending' : 'paid',
                 paymentMethod: isCourtesy ? 'Cortesía' : payMethod,
-                paymentDate: (payMethod === 'A Cuenta' && !isCourtesy) ? null : now.toISOString()
+                paymentDate: isPending ? null : now.toISOString()
             };
 
             await addDoc(collection(db, "sales"), saleData);
@@ -3312,7 +3400,7 @@
                 });
             }
 
-            if (payMethod === 'A Cuenta' && child) {
+            if (isPending && child) {
                 const newDebt = (child.debt || 0) + totalAmount;
                 const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
                 await updateDoc(doc(db, "kids", child.id), {
@@ -3418,6 +3506,7 @@
         $('apChildName').innerText = child.name;
         $('apChildParent').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone}`;
         $('assignPlanForm').reset();
+        if ($('apIncludeInIncome')) $('apIncludeInIncome').checked = true;
         
         const today = new Date().toISOString().split('T')[0];
         $('apStartDate').value = today;
@@ -3470,6 +3559,7 @@
         const totalHours = parseFloat($('apTotalHours').value);
         const hoursPerDay = parseFloat($('apHoursPerDay').value);
         const payMethod = $('apPayMethod').value;
+        const includeInIncome = $('apIncludeInIncome') ? $('apIncludeInIncome').checked : true;
 
         const now = new Date();
 
@@ -3478,15 +3568,16 @@
                 childId: child.id,
                 childName: child.name,
                 type: 'plan',
-                concept: `Asignación Plan: ${planName}`,
+                concept: `Asignación Plan: ${planName}` + (!includeInIncome ? ' (No suma a corte)' : ''),
                 qty: 1,
                 price: cost,
                 cost: 0,
                 amount: cost,
                 date: now.toISOString(),
-                status: payMethod === 'A Cuenta' ? 'pending' : 'paid',
+                status: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? 'pending' : 'paid',
                 paymentMethod: payMethod,
-                paymentDate: payMethod === 'A Cuenta' ? null : now.toISOString()
+                paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString(),
+                includeInIncome: includeInIncome
             };
 
             await addDoc(collection(db, "sales"), saleData);
@@ -3503,12 +3594,13 @@
                 hoursPerDay,
                 startDate,
                 expirationDate,
-                paymentDate: now.toISOString(),
-                cost
+                paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString(),
+                cost,
+                includeInIncome
             });
 
             const updates = { activePlans, activePlan: null };
-            if (payMethod === 'A Cuenta') {
+            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
                 updates.debt = (child.debt || 0) + cost;
                 updates.debtSince = child.debtSince ? child.debtSince : now.toISOString();
             }
@@ -3913,11 +4005,9 @@
     function updateIncomeToday() {
         const todayStr = new Date().toDateString();
         const historyIncome = state.history.filter(h => new Date(h.date).toDateString() === todayStr).reduce((a, b) => a + (b.total || 0), 0);
-        const salesIncome = state.sales.filter(s => new Date(s.date).toDateString() === todayStr).reduce((a, b) => a + (b.amount || 0), 0);
+        const salesIncome = state.sales.filter(s => new Date(s.date).toDateString() === todayStr && s.includeInIncome !== false).reduce((a, b) => a + (b.amount || 0), 0);
         $('incomeToday').innerText = formatMoney(historyIncome + salesIncome);
     }
 </script>
 </body>
 </html>
-
-
