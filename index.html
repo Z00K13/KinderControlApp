@@ -676,7 +676,7 @@
                 <!-- Productos -->
                 <div class="card">
                     <div class="card-header">
-                        <h2><i class="fas fa-boxes"></i> Productos en Inventario</h2>
+                        <h2><i class="fas fa-boxes"></i> Productos en Inventario <span id="invLowStockAlertBadge" style="display:none; background:#fee2e2; color:#991b1b; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:700; margin-left:10px;"><i class="fas fa-exclamation-triangle"></i> <span id="invLowStockCount">0</span> con Stock Bajo (≤8)</span></h2>
                         <div style="display:flex; gap:10px;">
                             <button class="btn btn-primary btn-sm" id="btnNewProduct" onclick="openAddProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
                             <button class="btn btn-outline btn-sm" id="btnCategories" onclick="openAddCategoryModal()"><i class="fas fa-tags"></i> Categorías</button>
@@ -692,6 +692,14 @@
                                 <label>Categoría</label>
                                 <select id="prodCategoryFilter">
                                     <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Filtrar Stock</label>
+                                <select id="prodStockFilter">
+                                    <option value="">Todos los productos</option>
+                                    <option value="low">⚠️ Solo Stock Bajo (≤ 8 u.)</option>
+                                    <option value="normal">Stock Normal (> 8 u.)</option>
                                 </select>
                             </div>
                         </div>
@@ -719,6 +727,18 @@
                         <div class="card-header"><h2><i class="fas fa-shopping-cart"></i> Venta Rápida</h2></div>
                         <div class="card-body">
                             <button class="btn btn-primary" onclick="openQuickSellModal()" style="width:100%;"><i class="fas fa-cart-plus"></i> Registrar Nueva Venta</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-clipboard-list"></i> Reportes de Inventario</h2></div>
+                        <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
+                            <button class="btn btn-outline" onclick="generateInventoryPdf('all')" style="width:100%;"><i class="fas fa-file-pdf" style="color:var(--primary);"></i> PDF Inventario Completo</button>
+                            <button class="btn btn-warning" onclick="generateInventoryPdf('low')" style="width:100%; font-weight:700;"><i class="fas fa-exclamation-triangle"></i> PDF Stock Bajo (≤ 8 un.)</button>
+                            <div style="display:flex; gap:8px; margin-top:5px;">
+                                <button class="btn btn-secondary btn-sm" onclick="exportInventoryExcel('all')" style="flex:1;"><i class="fas fa-file-excel" style="color:var(--success);"></i> Excel Todo</button>
+                                <button class="btn btn-secondary btn-sm" onclick="exportInventoryExcel('low')" style="flex:1;"><i class="fas fa-file-excel" style="color:var(--warning);"></i> Excel Stock Bajo</button>
+                            </div>
                         </div>
                     </div>
 
@@ -3211,12 +3231,31 @@
     };
 
     function renderProducts() {
-        const search = $('prodSearchInput').value.toLowerCase();
-        const catId = $('prodCategoryFilter').value;
+        const search = ($('prodSearchInput') ? $('prodSearchInput').value : '').toLowerCase();
+        const catId = $('prodCategoryFilter') ? $('prodCategoryFilter').value : '';
+        const stockFilter = $('prodStockFilter') ? $('prodStockFilter').value : '';
+
+        // Contar productos con alerta de stock bajo (<= 8 unidades y no infinitos)
+        const lowStockProducts = state.products.filter(p => !p.isInfinite && p.stock <= 8);
+        if ($('invLowStockAlertBadge')) {
+            if (lowStockProducts.length > 0) {
+                $('invLowStockAlertBadge').style.display = 'inline-flex';
+                $('invLowStockCount').innerText = lowStockProducts.length;
+            } else {
+                $('invLowStockAlertBadge').style.display = 'none';
+            }
+        }
+
         const rows = state.products.filter(p => {
             const matchesSearch = (p.name || '').toLowerCase().includes(search);
             const matchesCategory = !catId || p.categoryId === catId;
-            return matchesSearch && matchesCategory;
+            let matchesStock = true;
+            if (stockFilter === 'low') {
+                matchesStock = !p.isInfinite && p.stock <= 8;
+            } else if (stockFilter === 'normal') {
+                matchesStock = p.isInfinite || p.stock > 8;
+            }
+            return matchesSearch && matchesCategory && matchesStock;
         });
 
         if (rows.length === 0) {
@@ -3227,6 +3266,7 @@
         $('productsTableBody').innerHTML = rows.map(p => {
             const category = state.categories.find(c => c.id === p.categoryId) || { name: 'Sin Categoría' };
             const perms = getUserPermissionsObj(currentUserObj);
+            const isLowStock = !p.isInfinite && p.stock <= 8;
             
             let actionButtons = '';
             if (perms.manage_inventory) {
@@ -3239,11 +3279,15 @@
             }
 
             return `
-                <tr>
-                    <td data-label="Producto"><strong>${p.name}</strong></td>
+                <tr style="${isLowStock ? 'background-color: #fff1f2;' : ''}">
+                    <td data-label="Producto">
+                        <strong>${p.name}</strong>
+                        ${isLowStock ? '<br><small style="color:var(--danger); font-weight:700;"><i class="fas fa-exclamation-triangle"></i> ¡Stock Bajo (≤8)!</small>' : ''}
+                    </td>
                     <td data-label="Categoría">${category.name}</td>
-                    <td data-label="Stock" style="color: ${(!p.isInfinite && p.stock <= 2) ? 'var(--danger)' : 'inherit'}; font-weight: ${(!p.isInfinite && p.stock <= 2) ? '700' : 'normal'};">
+                    <td data-label="Stock" style="color: ${isLowStock ? 'var(--danger)' : 'inherit'}; font-weight: ${isLowStock ? '700' : 'normal'};">
                         ${p.isInfinite ? '<i class="fas fa-infinity" title="Infinito"></i>' : p.stock}
+                        ${isLowStock ? ' <span class="badge" style="background:#fee2e2; color:#991b1b; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:700;"><i class="fas fa-exclamation-circle"></i> ≤8</span>' : ''}
                     </td>
                     <td data-label="Costo Compra">${formatMoney(p.cost)}</td>
                     <td data-label="Precio Venta">
@@ -3260,8 +3304,9 @@
         }).join('');
     }
 
-    $('prodSearchInput').oninput = renderProducts;
-    $('prodCategoryFilter').onchange = renderProducts;
+    if ($('prodSearchInput')) $('prodSearchInput').oninput = renderProducts;
+    if ($('prodCategoryFilter')) $('prodCategoryFilter').onchange = renderProducts;
+    if ($('prodStockFilter')) $('prodStockFilter').onchange = renderProducts;
 
     // --- PRODUCT SALES ---
     window.openSellModal = childId => {
@@ -3814,6 +3859,115 @@
         
         pdf.save(`reporte_ventas_${Date.now()}.pdf`);
         showToast("PDF generado");
+    };
+
+    // --- REPORTE Y EXPORTACIÓN DE INVENTARIO ---
+    window.generateInventoryPdf = (filterType = 'all') => {
+        let products = state.products || [];
+        const isLowOnly = filterType === 'low';
+
+        if (isLowOnly) {
+            products = products.filter(p => !p.isInfinite && p.stock <= 8);
+        }
+
+        if (products.length === 0) {
+            return showToast(isLowOnly ? "No hay productos con stock bajo (≤ 8 unidades)" : "No hay productos en inventario", "error");
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        pdf.setFontSize(16);
+        pdf.text(state.config.brandName || 'Ludoteca', 14, 15);
+        pdf.setFontSize(12);
+        
+        const title = isLowOnly 
+            ? "Reporte de Alerta - Productos con Stock Bajo (≤ 8 Unidades)" 
+            : "Reporte General de Inventario de Productos";
+        pdf.text(title, 14, 22);
+        
+        pdf.setFontSize(10);
+        pdf.text(`Fecha de Emisión: ${formatDate(new Date())} | Total ítems: ${products.length}`, 14, 28);
+        
+        const tableBody = products.map(p => {
+            const cat = state.categories.find(c => c.id === p.categoryId) || { name: 'Sin Categoría' };
+            const stockStr = p.isInfinite ? 'Infinito' : `${p.stock} u.`;
+            const statusStr = p.isInfinite ? 'NORMAL' : (p.stock <= 8 ? 'STOCK BAJO (≤8)' : 'NORMAL');
+            const stockValueCost = p.isInfinite ? '$0.00' : formatMoney((p.stock || 0) * (p.cost || 0));
+
+            return [
+                p.name || 'Sin Nombre',
+                cat.name,
+                stockStr,
+                formatMoney(p.cost),
+                formatMoney(p.price),
+                stockValueCost,
+                statusStr
+            ];
+        });
+
+        pdf.autoTable({
+            startY: 34,
+            head: [['Producto', 'Categoría', 'Stock', 'Costo Compra', 'Precio Venta', 'Valor Costo', 'Estado']],
+            body: tableBody,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: isLowOnly ? [220, 38, 38] : [30, 74, 118] },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 6) {
+                    if (data.cell.raw && data.cell.raw.includes('STOCK BAJO')) {
+                        data.cell.styles.textColor = [185, 28, 28];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 40;
+        
+        const totalItemsCount = products.reduce((acc, p) => acc + (p.isInfinite ? 0 : (p.stock || 0)), 0);
+        const totalCostVal = products.reduce((acc, p) => acc + (p.isInfinite ? 0 : (p.stock || 0) * (p.cost || 0)), 0);
+        const totalSaleVal = products.reduce((acc, p) => acc + (p.isInfinite ? 0 : (p.stock || 0) * (p.price || 0)), 0);
+
+        pdf.setFontSize(10);
+        pdf.text(`Total de Piezas en Stock: ${totalItemsCount} unidades`, 14, finalY + 10);
+        pdf.text(`Valor Total Inventario (Costo): ${formatMoney(totalCostVal)}`, 14, finalY + 16);
+        pdf.text(`Valor Total Inventario (Venta Potencial): ${formatMoney(totalSaleVal)}`, 14, finalY + 22);
+
+        pdf.save(`reporte_inventario_${isLowOnly ? 'stock_bajo' : 'completo'}_${Date.now()}.pdf`);
+        showToast("PDF de inventario generado");
+    };
+
+    window.exportInventoryExcel = (filterType = 'all') => {
+        let products = state.products || [];
+        const isLowOnly = filterType === 'low';
+
+        if (isLowOnly) {
+            products = products.filter(p => !p.isInfinite && p.stock <= 8);
+        }
+
+        if (products.length === 0) {
+            return showToast(isLowOnly ? "No hay productos con stock bajo (≤ 8 unidades)" : "No hay productos en inventario", "error");
+        }
+
+        const rows = products.map(p => {
+            const cat = state.categories.find(c => c.id === p.categoryId) || { name: 'Sin Categoría' };
+            return {
+                'Producto': p.name,
+                'Categoría': cat.name,
+                'Stock Actual': p.isInfinite ? 'Infinito' : p.stock,
+                'Alerta Stock Bajo': (!p.isInfinite && p.stock <= 8) ? 'SÍ (≤8)' : 'NO',
+                'Costo Compra': p.cost || 0,
+                'Precio Venta': p.price || 0,
+                'Precio Empleado': p.employeePrice || 0,
+                'Valor Inventario (Costo)': p.isInfinite ? 0 : (p.stock || 0) * (p.cost || 0),
+                'Valor Inventario (Venta)': p.isInfinite ? 0 : (p.stock || 0) * (p.price || 0)
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, isLowOnly ? 'Stock Bajo' : 'Inventario');
+        XLSX.writeFile(wb, `inventario_${isLowOnly ? 'stock_bajo' : 'completo'}_${Date.now()}.xlsx`);
+        showToast("Excel de inventario generado");
     };
 
     // --- EXPORTACIÓN UNIFICADA (GLOBAL) ---
