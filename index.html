@@ -597,10 +597,10 @@
                             <div class="form-group">
                                 <label>Horas Prepago</label>
                                 <select id="hoursSelect">
-                                    <option value="1">1 Hora</option>
-                                    <option value="2" selected>2 Horas</option>
-                                    <option value="3">3 Horas</option>
-                                    <option value="4">4 Horas</option>
+                                    <option value="1">1 Hora ($150.00)</option>
+                                    <option value="2" selected>2 Horas ($280.00)</option>
+                                    <option value="3">3 Horas ($390.00)</option>
+                                    <option value="4">4 Horas ($520.00)</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -1374,10 +1374,13 @@
     </div>
 </div>
 
-<!-- MODAL: VENTA DE PRODUCTO -->
+<!-- MODAL: VENTA DE PRODUCTO (CARRITO MULTI-ARTÍCULO) -->
 <div id="sellProductModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 450px;">
-        <div class="modal-header"><h2>Registrar Venta de Producto</h2><button onclick="closeSellProductModal()">×</button></div>
+    <div class="modal-content" style="max-width: 680px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-shopping-cart"></i> Registrar Venta de Productos</h2>
+            <button onclick="closeSellProductModal()">×</button>
+        </div>
         <form id="sellProductForm">
             <input type="hidden" id="spChildId">
             <div class="modal-body">
@@ -1394,41 +1397,80 @@
                         <option value="">-- Seleccionar Niño --</option>
                     </select>
                 </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Seleccionar Producto *</label>
-                    <select id="spProductSelect" required onchange="onSellProductChange()">
-                        <option value="">-- Seleccionar Producto --</option>
-                    </select>
-                </div>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Cantidad (Stock: <span id="spStockLabel">-</span>) *</label>
-                        <input type="number" id="spQuantity" required min="1" value="1" oninput="updateSpTotal()">
-                    </div>
-                    <div class="form-group">
-                        <label>Precio Unitario</label>
-                        <input type="text" id="spPriceVal" readonly style="background:#f1f5f9;">
-                    </div>
-                </div>
-                <div class="form-group" style="margin-top: 15px;" id="spEmployeeSaleGroup">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                        <input type="checkbox" id="spIsEmployeeSale" onchange="onSellProductChange()"> 
-                        Aplicar Precio de Trabajador (si aplica)
+
+                <!-- SECCIÓN PARA AGREGAR PRODUCTO AL CARRITO -->
+                <div style="background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+                    <label style="font-weight: 700; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 10px;">
+                        <i class="fas fa-plus-circle"></i> Agregar Artículo al Carrito
                     </label>
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:8px;">
-                        <input type="checkbox" id="spIsCourtesy" onchange="onSellProductChange()"> 
-                        Marcar como Cortesía (Gratis)
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Seleccionar Producto *</label>
+                        <select id="spProductSelect" onchange="onSellProductChange()">
+                            <option value="">-- Seleccionar Producto --</option>
+                        </select>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>Cantidad (Stock: <span id="spStockLabel">-</span>)</label>
+                            <input type="number" id="spQuantity" min="1" value="1" oninput="updateSpTotal()">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Unitario ($)</label>
+                            <input type="text" id="spPriceVal" readonly style="background:#f1f5f9;">
+                        </div>
+                        <div class="form-group" style="justify-content: flex-end;">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnAddCartItem" onclick="addCurrentProductToCart()" style="height: 48px; border-color: var(--primary); color: var(--primary); font-weight:700;">
+                                <i class="fas fa-cart-plus"></i> + Agregar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group" id="spEmployeeSaleGroup" style="margin-bottom: 0;">
+                        <div style="display:flex; gap:15px; flex-wrap:wrap;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem;">
+                                <input type="checkbox" id="spIsEmployeeSale" onchange="onSellProductChange()"> 
+                                Precio Trabajador
+                            </label>
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem;">
+                                <input type="checkbox" id="spIsCourtesy" onchange="onSellProductChange()"> 
+                                Marcar como Cortesía (Gratis)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DETALLE DEL CARRITO -->
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span><i class="fas fa-list-ul"></i> Artículos en la Venta (<span id="cartCountBadge">0</span>)</span>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="clearCart()" style="padding: 3px 10px; font-size: 0.75rem; color: var(--danger);"><i class="fas fa-trash"></i> Vaciar Carrito</button>
                     </label>
+                    <div class="table-container" style="max-height: 200px; overflow-y: auto; border-radius: var(--radius-md);">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th style="width: 110px; text-align: center;">Cantidad</th>
+                                    <th>P. Unitario</th>
+                                    <th>Subtotal</th>
+                                    <th style="width: 45px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div style="margin-top: 15px; font-size: 1.2rem; font-weight: 800; color: var(--primary); text-align: right;">
-                    Total: <span id="spTotalVal">$0.00</span>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 15px; margin-bottom: 15px;">
+                    <span style="font-weight: 700; font-size: 1rem; color: var(--text-main);">TOTAL VENTA:</span>
+                    <span id="spTotalVal" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">$0.00</span>
                 </div>
-                <div class="form-group" style="margin-top: 15px;">
+
+                <div class="form-group">
                     <label>Método de Pago *</label>
                     <select id="spPayMethod" required>
                         <option value="Efectivo">Efectivo</option>
                         <option value="Tarjeta">Tarjeta</option>
-<option value="Transferencia">Transferencia</option>
+                        <option value="Transferencia">Transferencia</option>
                         <option value="Pendiente">Pendiente de Pago</option>
                         <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
                     </select>
@@ -1436,9 +1478,94 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeSellProductModal()">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Registrar Venta</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitSellForm"><i class="fas fa-check-circle"></i> Registrar Venta</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- MODAL: EXPEDIENTE E HISTORIAL COMPLETO DEL NIÑO -->
+<div id="childHistoryModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+        <div class="modal-header">
+            <h2><i class="fas fa-id-card"></i> Expediente e Historial Completo</h2>
+            <button onclick="closeChildHistoryModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <!-- Header Resumen del Niño -->
+            <div style="background: linear-gradient(135deg, #1e4a76, #0f2942); color: white; border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div class="logo-icon" style="background: rgba(255,255,255,0.2); color: white; width:48px; height:48px; font-size:1.4rem;"><i class="fas fa-user-graduate"></i></div>
+                    <div>
+                        <h3 id="chChildName" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 2px;">-</h3>
+                        <div id="chChildMeta" style="font-size: 0.88rem; opacity: 0.9;">-</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;" id="chBadgesContainer"></div>
+            </div>
+
+            <!-- KPI Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <div class="stat-card" style="padding:12px 16px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label"><i class="fas fa-clock" style="color:var(--primary);"></i> Horas Estancia</span>
+                    <span class="stat-value" style="font-size:1.3rem;" id="chKpiVisits">0h 0m</span>
+                </div>
+                <div class="stat-card" style="padding:12px 16px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label"><i class="fas fa-cookie-bite" style="color:var(--success);"></i> Compras Tienda</span>
+                    <span class="stat-value" style="font-size:1.3rem; color:var(--success);" id="chKpiProducts">$0.00</span>
+                </div>
+                <div class="stat-card" style="padding:12px 16px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label"><i class="fas fa-file-invoice-dollar" style="color:var(--primary-light);"></i> Planes Adquiridos</span>
+                    <span class="stat-value" style="font-size:1.3rem; color:var(--primary-light);" id="chKpiPlans">0</span>
+                </div>
+                <div class="stat-card" style="padding:12px 16px; flex-direction:column; align-items:flex-start; border-radius:var(--radius-md);">
+                    <span class="stat-label"><i class="fas fa-wallet" style="color:var(--text-main);"></i> Inversión Total</span>
+                    <span class="stat-value" style="font-size:1.3rem; color:var(--primary);" id="chKpiTotalSpent">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Filtros e Historial -->
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                <div style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 50px; flex-wrap:wrap;">
+                    <button type="button" id="chTabAll" class="btn btn-sm" style="border-radius:50px; background:var(--primary); color:white;" onclick="filterChildHistoryTab('all')">
+                        <i class="fas fa-list"></i> Todos
+                    </button>
+                    <button type="button" id="chTabVisits" class="btn btn-sm" style="border-radius:50px; background:transparent; color:var(--text-muted);" onclick="filterChildHistoryTab('visits')">
+                        <i class="fas fa-clock"></i> Estancias
+                    </button>
+                    <button type="button" id="chTabProducts" class="btn btn-sm" style="border-radius:50px; background:transparent; color:var(--text-muted);" onclick="filterChildHistoryTab('sales')">
+                        <i class="fas fa-box"></i> Productos
+                    </button>
+                    <button type="button" id="chTabPlans" class="btn btn-sm" style="border-radius:50px; background:transparent; color:var(--text-muted);" onclick="filterChildHistoryTab('plans')">
+                        <i class="fas fa-star"></i> Planes
+                    </button>
+                </div>
+                <div style="position:relative; min-width: 200px;">
+                    <input type="text" id="chSearchInput" class="form-group" placeholder="Filtrar concepto..." style="padding:6px 14px; font-size:0.85rem; border-radius:20px; width:100%; border:1px solid var(--border);" oninput="renderChildHistoryTable()">
+                </div>
+            </div>
+
+            <div class="table-container" style="max-height: 350px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Concepto / Detalle</th>
+                            <th>Cant. / Duración</th>
+                            <th>Importe</th>
+                            <th>Método</th>
+                            <th>Estado / Obs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="childHistoryTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="exportChildHistoryPdf()"><i class="fas fa-file-pdf" style="color:var(--danger);"></i> Descargar Expediente PDF</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="closeChildHistoryModal()">Cerrar</button>
+        </div>
     </div>
 </div>
 
@@ -1588,9 +1715,24 @@
     let state = {
         children: [], activeSessions: [], history: [],
         categories: [], products: [], plans: [], sales: [], users: [],
-        config: { brandName: 'KinderControlPro', hourlyRate: 50, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
+        config: { brandName: 'KinderControlPro', hourlyRate: 150, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
         currentSecureTab: null
     };
+
+    // Tabla de precios para la estancia normal prepago
+    const NORMAL_STAY_RATES = {
+        1: 150,
+        2: 280,
+        3: 390,
+        4: 520
+    };
+
+    function getPrepaidRateForHours(hrs) {
+        const h = parseInt(hrs) || 0;
+        if (NORMAL_STAY_RATES[h]) return NORMAL_STAY_RATES[h];
+        if (h > 4) return NORMAL_STAY_RATES[4] + (h - 4) * 130;
+        return h * (state.config.hourlyRate || 150);
+    }
 
     // Cargar usuarios de forma global (para login de trabajadores en nuevos dispositivos)
     onSnapshot(collection(db, "users"), snap => {
@@ -1746,7 +1888,12 @@
     function initListeners() {
         detachListeners();
         unsubscribers.push(onSnapshot(collection(db, "kids"), snap => {
-            state.children = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const rawKids = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            state.children = rawKids.reverse().sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
             renderKidsList();
             renderActivePlansTable();
             if (window.currentAccountChildId) {
@@ -2192,6 +2339,7 @@
             if (id) {
                 await updateDoc(doc(db, "kids", id), data);
             } else {
+                data.createdAt = new Date().toISOString();
                 data.debt = 0;
                 data.debtSince = null;
                 data.activePlan = null;
@@ -2266,6 +2414,7 @@
                     <td data-label="Notas Médicas"><small>${c.medical || '-'}</small></td>
                     <td data-label="Acciones">
                         <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-icon" onclick="openChildHistoryModal('${c.id}')" title="Expediente e Historial Completo"><i class="fas fa-id-card" style="color:var(--primary);"></i></button>
                             <button class="btn btn-outline btn-icon" onclick="openSellModal('${c.id}')" title="Vender Producto"><i class="fas fa-shopping-cart" style="color:var(--success);"></i></button>
                             <button class="btn btn-outline btn-icon" onclick="openAssignPlanModal('${c.id}')" title="Asignar Plan"><i class="fas fa-file-invoice-dollar" style="color:var(--primary-light);"></i></button>
                             <button class="btn btn-outline btn-icon" onclick="openAccountModal('${c.id}')" title="Estado de Cuenta"><i class="fas fa-wallet" style="color:${c.debt > 0 ? 'var(--danger)' : 'var(--text-muted)'};"></i></button>
@@ -2648,7 +2797,7 @@
                 const extraMins = overMinutes % 60;
                 extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
             }
-            prepaidCost = (s.hoursPaid || 0) * state.config.hourlyRate;
+            prepaidCost = getPrepaidRateForHours(s.hoursPaid);
             total = prepaidCost + extraCharge;
         }
 
@@ -2744,7 +2893,7 @@
                 const extraMins = overMinutes % 60;
                 extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
             }
-            prepaidCost = (s.hoursPaid || 0) * state.config.hourlyRate;
+            prepaidCost = getPrepaidRateForHours(s.hoursPaid);
             total = prepaidCost + extraCharge;
         }
 
@@ -3308,9 +3457,142 @@
     if ($('prodCategoryFilter')) $('prodCategoryFilter').onchange = renderProducts;
     if ($('prodStockFilter')) $('prodStockFilter').onchange = renderProducts;
 
-    // --- PRODUCT SALES ---
+    // --- PRODUCT SALES (CARRITO MULTI-ARTÍCULOS) ---
+    let currentCart = [];
+
+    window.clearCart = () => {
+        currentCart = [];
+        renderCart();
+    };
+
+    window.addCurrentProductToCart = () => {
+        const prodId = $('spProductSelect').value;
+        const p = state.products.find(x => x.id === prodId);
+        if (!p) return showToast("Selecciona un producto primero", "error");
+
+        const qty = parseInt($('spQuantity').value) || 0;
+        if (isNaN(qty) || qty <= 0) return showToast("Cantidad no válida", "error");
+
+        // Validar stock disponible acumulando con lo que ya hay en el carrito
+        const existingInCart = currentCart.find(item => item.productId === p.id);
+        const existingQty = existingInCart ? existingInCart.qty : 0;
+        const totalRequested = existingQty + qty;
+
+        if (!p.isInfinite && totalRequested > p.stock) {
+            return showToast(`Stock insuficiente. Disponible: ${p.stock} (Ya tienes ${existingQty} en el carrito)`, "error");
+        }
+
+        const isEmployee = $('spIsEmployeeSale') && $('spIsEmployeeSale').checked;
+        const isCourtesy = $('spIsCourtesy') && $('spIsCourtesy').checked;
+
+        let unitPrice = p.price;
+        let badgeNote = '';
+        if (isCourtesy) {
+            unitPrice = 0;
+            badgeNote = ' (Cortesía)';
+        } else if (isEmployee && p.employeePrice !== undefined && p.employeePrice !== null) {
+            unitPrice = p.employeePrice;
+            badgeNote = ' (Trabajador)';
+        }
+
+        if (existingInCart) {
+            existingInCart.qty += qty;
+            existingInCart.unitPrice = unitPrice;
+            existingInCart.badgeNote = badgeNote;
+            existingInCart.subtotal = existingInCart.qty * unitPrice;
+        } else {
+            currentCart.push({
+                productId: p.id,
+                name: p.name + badgeNote,
+                rawName: p.name,
+                qty: qty,
+                unitPrice: unitPrice,
+                cost: p.cost || 0,
+                subtotal: qty * unitPrice,
+                isCourtesy: isCourtesy,
+                isEmployee: isEmployee,
+                isInfinite: p.isInfinite
+            });
+        }
+
+        // Reset campos de producto
+        $('spProductSelect').value = '';
+        $('spQuantity').value = 1;
+        $('spStockLabel').innerText = '-';
+        $('spPriceVal').value = '';
+        if ($('spIsEmployeeSale')) $('spIsEmployeeSale').checked = false;
+        if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
+
+        renderCart();
+        showToast(`Agregado: ${p.name} (x${qty})`);
+    };
+
+    window.removeFromCart = index => {
+        currentCart.splice(index, 1);
+        renderCart();
+    };
+
+    window.updateCartQty = (index, delta) => {
+        const item = currentCart[index];
+        if (!item) return;
+
+        const p = state.products.find(x => x.id === item.productId);
+        const newQty = item.qty + delta;
+
+        if (newQty <= 0) {
+            return window.removeFromCart(index);
+        }
+
+        if (p && !p.isInfinite && newQty > p.stock) {
+            return showToast(`No hay suficiente stock. Disponible: ${p.stock}`, "error");
+        }
+
+        item.qty = newQty;
+        item.subtotal = item.qty * item.unitPrice;
+        renderCart();
+    };
+
+    function renderCart() {
+        const tbody = $('cartTableBody');
+        const badge = $('cartCountBadge');
+        if (!tbody) return;
+
+        if (badge) badge.innerText = currentCart.length;
+
+        if (currentCart.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state" style="padding:15px;"><p style="font-size:0.85rem;">Carrito vacío. Selecciona un producto y presiona "+ Agregar".</p></div></td></tr>`;
+            $('spTotalVal').innerText = '$0.00';
+            return;
+        }
+
+        let total = 0;
+        tbody.innerHTML = currentCart.map((item, idx) => {
+            total += item.subtotal;
+            return `
+                <tr>
+                    <td data-label="Producto"><strong>${item.name}</strong></td>
+                    <td data-label="Cantidad" style="text-align:center;">
+                        <div style="display:inline-flex; align-items:center; gap:5px;">
+                            <button type="button" class="btn btn-outline btn-icon btn-sm" style="width:24px; height:24px;" onclick="updateCartQty(${idx}, -1)">-</button>
+                            <span style="font-weight:700; width:20px; text-align:center;">${item.qty}</span>
+                            <button type="button" class="btn btn-outline btn-icon btn-sm" style="width:24px; height:24px;" onclick="updateCartQty(${idx}, 1)">+</button>
+                        </div>
+                    </td>
+                    <td data-label="P. Unitario">${formatMoney(item.unitPrice)}</td>
+                    <td data-label="Subtotal"><strong>${formatMoney(item.subtotal)}</strong></td>
+                    <td data-label="Acción">
+                        <button type="button" class="btn btn-danger btn-icon btn-sm" style="width:26px; height:26px;" onclick="removeFromCart(${idx})" title="Eliminar"><i class="fas fa-times"></i></button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        $('spTotalVal').innerText = formatMoney(total);
+    }
+
     window.openSellModal = childId => {
         window.currentSellChildId = childId;
+        currentCart = [];
         const child = state.children.find(c => c.id === childId);
         if (child) {
             $('spChildId').value = child.id;
@@ -3334,7 +3616,7 @@
         if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
         $('spStockLabel').innerText = '-';
         $('spPriceVal').value = '';
-        $('spTotalVal').innerText = '$0.00';
+        renderCart();
         $('sellProductModal').style.display = 'flex';
     };
 
@@ -3386,67 +3668,81 @@
         } else {
             $('spStockLabel').innerText = '-';
             $('spPriceVal').value = '';
-            $('spTotalVal').innerText = '$0.00';
+            updateSpTotal();
         }
     };
 
     window.updateSpTotal = () => {
-        const price = parseFloat($('spPriceVal').value) || 0;
-        const qty = parseInt($('spQuantity').value) || 0;
-        $('spTotalVal').innerText = formatMoney(price * qty);
+        if (currentCart.length === 0) {
+            const price = parseFloat($('spPriceVal').value) || 0;
+            const qty = parseInt($('spQuantity').value) || 0;
+            $('spTotalVal').innerText = formatMoney(price * qty);
+        } else {
+            const cartSum = currentCart.reduce((acc, i) => acc + i.subtotal, 0);
+            $('spTotalVal').innerText = formatMoney(cartSum);
+        }
     };
 
     $('sellProductForm').onsubmit = async e => {
         e.preventDefault();
-        const prodId = $('spProductSelect').value;
-        const p = state.products.find(x => x.id === prodId);
-        if (!p) return showToast("Selecciona un producto", "error");
+        
+        // Si el usuario no presionó "+ Agregar" pero seleccionó un producto en los inputs, agregarlo automáticamente
+        const selectedProdId = $('spProductSelect').value;
+        if (currentCart.length === 0 && selectedProdId) {
+            window.addCurrentProductToCart();
+        }
 
-        const qty = parseInt($('spQuantity').value);
-        if (isNaN(qty) || qty <= 0) return showToast("Cantidad no válida", "error");
-        if (!p.isInfinite && qty > p.stock) return showToast("Stock insuficiente", "error");
+        if (currentCart.length === 0) {
+            return showToast("El carrito está vacío. Agrega al menos 1 producto antes de registrar la venta.", "error");
+        }
 
         const childId = $('spChildId').value || $('spChildSelect').value;
         const child = childId ? state.children.find(c => c.id === childId) : null;
         const payMethod = $('spPayMethod').value;
-        const isCourtesy = $('spIsCourtesy') && $('spIsCourtesy').checked;
-        const isPending = (payMethod === 'A Cuenta' || payMethod === 'Pendiente') && !isCourtesy;
 
         if (payMethod === 'A Cuenta' && !child) {
             return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
         }
 
         const now = new Date();
-        const actualPrice = parseFloat($('spPriceVal').value);
-        const totalAmount = qty * actualPrice;
-        const totalCost = qty * (p.cost || 0);
+        const cartId = 'CART-' + Date.now();
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
+        const isPending = (payMethod === 'A Cuenta' || payMethod === 'Pendiente');
+
+        if ($('btnSubmitSellForm')) $('btnSubmitSellForm').disabled = true;
 
         try {
-            const saleData = {
-                childId: child ? child.id : '',
-                childName: child ? child.name : 'Venta de Mostrador',
-                type: 'product',
-                concept: isCourtesy ? `Cortesía: ${p.name}` : `Compra: ${p.name}`,
-                qty: qty,
-                price: actualPrice,
-                cost: totalCost,
-                amount: totalAmount,
-                date: now.toISOString(),
-                status: isPending ? 'pending' : 'paid',
-                paymentMethod: isCourtesy ? 'Cortesía' : payMethod,
-                paymentDate: isPending ? null : now.toISOString()
-            };
+            for (const item of currentCart) {
+                const p = state.products.find(x => x.id === item.productId);
+                const totalCost = item.qty * (item.cost || 0);
 
-            await addDoc(collection(db, "sales"), saleData);
+                const saleData = {
+                    childId: child ? child.id : '',
+                    childName: child ? child.name : 'Venta de Mostrador',
+                    type: 'product',
+                    concept: item.isCourtesy ? `Cortesía: ${item.rawName}` : `Compra: ${item.name}`,
+                    qty: item.qty,
+                    price: item.unitPrice,
+                    cost: totalCost,
+                    amount: item.subtotal,
+                    date: now.toISOString(),
+                    status: isPending ? 'pending' : 'paid',
+                    paymentMethod: item.isCourtesy ? 'Cortesía' : payMethod,
+                    paymentDate: isPending ? null : now.toISOString(),
+                    cartId: cartId
+                };
 
-            if (!p.isInfinite) {
-                await updateDoc(doc(db, "products", p.id), {
-                    stock: p.stock - qty
-                });
+                await addDoc(collection(db, "sales"), saleData);
+
+                if (p && !p.isInfinite) {
+                    await updateDoc(doc(db, "products", p.id), {
+                        stock: Math.max(0, p.stock - item.qty)
+                    });
+                }
             }
 
-            if (isPending && child) {
-                const newDebt = (child.debt || 0) + totalAmount;
+            if (isPending && child && grandTotal > 0) {
+                const newDebt = (child.debt || 0) + grandTotal;
                 const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
                 await updateDoc(doc(db, "kids", child.id), {
                     debt: newDebt,
@@ -3454,11 +3750,257 @@
                 });
             }
 
+            currentCart = [];
             closeSellProductModal();
-            showToast("Venta registrada con éxito");
+            showToast(`Venta registrada con éxito (${formatMoney(grandTotal)})`);
         } catch (err) {
             showToast("Error al registrar venta: " + err.message, "error");
+        } finally {
+            if ($('btnSubmitSellForm')) $('btnSubmitSellForm').disabled = false;
         }
+    };
+
+    // --- EXPEDIENTE Y HISTORIAL DEL NIÑO ---
+    let currentHistoryChildId = null;
+    let currentChildHistoryTab = 'all';
+
+    window.openChildHistoryModal = childId => {
+        currentHistoryChildId = childId;
+        currentChildHistoryTab = 'all';
+        if ($('chSearchInput')) $('chSearchInput').value = '';
+        renderChildHistoryModal();
+        $('childHistoryModal').style.display = 'flex';
+    };
+
+    window.closeChildHistoryModal = () => {
+        $('childHistoryModal').style.display = 'none';
+        currentHistoryChildId = null;
+    };
+
+    window.filterChildHistoryTab = tab => {
+        currentChildHistoryTab = tab;
+        ['all', 'visits', 'sales', 'plans'].forEach(t => {
+            const btn = $(`chTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            if (btn) {
+                if (t === tab) {
+                    btn.style.background = 'var(--primary)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--text-muted)';
+                }
+            }
+        });
+        renderChildHistoryTable();
+    };
+
+    function getChildTimelineData(childId) {
+        const child = state.children.find(c => c.id === childId);
+        if (!child) return { child: null, timeline: [], stats: {} };
+
+        // 1. Estancias / Visitas de "history"
+        const visits = state.history.filter(h => h.childId === childId).map(h => ({
+            id: h.id,
+            date: new Date(h.date || h.entry),
+            rawDate: h.date || h.entry,
+            category: 'visits',
+            categoryLabel: 'Estancia',
+            concept: h.concept || 'Estancia Normal',
+            detail: `Entrada: ${formatTimeShort(h.entry)} - Salida: ${formatTimeShort(h.exit)} (${formatDuration(h.durationMinutes)})`,
+            qtyOrTime: formatDuration(h.durationMinutes),
+            amount: h.total || 0,
+            durationMinutes: h.durationMinutes || 0,
+            paymentMethod: h.method || 'Efectivo',
+            status: h.status === 'pending' ? 'Pendiente' : 'Pagado',
+            notes: (h.pickedUpBy ? `Recogió: ${h.pickedUpBy}. ` : '') + (h.notes || '')
+        }));
+
+        // 2. Compras y Planes de "sales"
+        const sales = state.sales.filter(s => s.childId === childId).map(s => {
+            const isPlan = s.type === 'plan';
+            return {
+                id: s.id,
+                date: new Date(s.date),
+                rawDate: s.date,
+                category: isPlan ? 'plans' : 'sales',
+                categoryLabel: isPlan ? 'Plan' : 'Producto',
+                concept: s.concept || (isPlan ? 'Plan de Horas' : 'Compra'),
+                detail: isPlan ? `Plan adquirido` : `Cantidad: ${s.qty || 1} u.`,
+                qtyOrTime: isPlan ? '1 plan' : `x${s.qty || 1}`,
+                amount: s.amount || 0,
+                paymentMethod: s.paymentMethod || 'Efectivo',
+                status: s.status === 'pending' ? 'Pendiente' : 'Pagado',
+                notes: ''
+            };
+        });
+
+        // 3. Planes activos o asignados directamente en el objeto niño (si no están en sales)
+        const childPlans = child.activePlans || (child.activePlan ? [child.activePlan] : []);
+        childPlans.forEach((p, idx) => {
+            const alreadyInSales = sales.some(s => s.category === 'plans' && Math.abs(new Date(s.rawDate) - new Date(p.startDate)) < 86400000);
+            if (!alreadyInSales && p.startDate) {
+                sales.push({
+                    id: 'plan-' + idx,
+                    date: new Date(p.startDate),
+                    rawDate: p.startDate,
+                    category: 'plans',
+                    categoryLabel: 'Plan',
+                    concept: `Plan: ${p.name}`,
+                    detail: `Total: ${p.totalHours}h (Restante: ${p.hoursRemaining.toFixed(1)}h). Vence: ${p.expirationDate}`,
+                    qtyOrTime: `${p.totalHours}h`,
+                    amount: p.cost || 0,
+                    paymentMethod: p.paymentDate ? 'Pagado' : 'A Cuenta',
+                    status: p.paymentDate ? 'Pagado' : 'Pendiente',
+                    notes: `Vence el ${p.expirationDate}`
+                });
+            }
+        });
+
+        const timeline = [...visits, ...sales].sort((a, b) => b.date - a.date);
+
+        // Calcular Estadísticas KPIs
+        const totalVisitsMinSum = visits.reduce((sum, v) => sum + (v.durationMinutes || 0), 0);
+        const totalProductSpent = sales.filter(s => s.category === 'sales').reduce((sum, s) => sum + s.amount, 0);
+        const totalPlansCount = sales.filter(s => s.category === 'plans').length;
+        const totalSpent = timeline.reduce((sum, item) => sum + item.amount, 0);
+
+        return {
+            child,
+            timeline,
+            stats: {
+                totalVisitsTimeStr: formatDuration(totalVisitsMinSum),
+                totalProductSpent,
+                totalPlansCount,
+                totalSpent
+            }
+        };
+    }
+
+    function renderChildHistoryModal() {
+        const { child, timeline, stats } = getChildTimelineData(currentHistoryChildId);
+        if (!child) return;
+
+        $('chChildName').innerText = child.name;
+        $('chChildMeta').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone} · Edad: ${child.age ? child.age + ' años' : '-'}`;
+
+        let badges = '';
+        if (child.debt && child.debt > 0) {
+            badges += `<span class="kid-status-badge danger"><i class="fas fa-exclamation-triangle"></i> Adeudo: ${formatMoney(child.debt)}</span>`;
+        } else {
+            badges += `<span class="kid-status-badge success"><i class="fas fa-check-circle"></i> Al corriente (Sin deuda)</span>`;
+        }
+        $('chBadgesContainer').innerHTML = badges;
+
+        $('chKpiVisits').innerText = stats.totalVisitsTimeStr;
+        $('chKpiProducts').innerText = formatMoney(stats.totalProductSpent);
+        $('chKpiPlans').innerText = stats.totalPlansCount;
+        $('chKpiTotalSpent').innerText = formatMoney(stats.totalSpent);
+
+        renderChildHistoryTable();
+    }
+
+    function renderChildHistoryTable() {
+        const { timeline } = getChildTimelineData(currentHistoryChildId);
+        const searchQ = ($('chSearchInput') ? $('chSearchInput').value : '').toLowerCase();
+
+        const filtered = timeline.filter(item => {
+            if (currentChildHistoryTab !== 'all' && item.category !== currentChildHistoryTab) return false;
+            if (searchQ) {
+                const matchConcept = (item.concept || '').toLowerCase().includes(searchQ);
+                const matchDetail = (item.detail || '').toLowerCase().includes(searchQ);
+                const matchNotes = (item.notes || '').toLowerCase().includes(searchQ);
+                if (!matchConcept && !matchDetail && !matchNotes) return false;
+            }
+            return true;
+        });
+
+        const tbody = $('childHistoryTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state" style="padding:20px;"><p>No se encontraron registros en el historial con este filtro.</p></div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(item => {
+            let catBadge = '';
+            if (item.category === 'visits') {
+                catBadge = `<span class="kid-status-badge success" style="font-size:0.7rem;"><i class="fas fa-clock"></i> Estancia</span>`;
+            } else if (item.category === 'sales') {
+                catBadge = `<span class="kid-status-badge warning" style="font-size:0.7rem;"><i class="fas fa-box"></i> Producto</span>`;
+            } else {
+                catBadge = `<span class="kid-status-badge" style="background:#e0e7ff; color:#3730a3; font-size:0.7rem;"><i class="fas fa-star"></i> Plan</span>`;
+            }
+
+            const statusClass = item.status === 'Pendiente' ? 'color:var(--danger); font-weight:700;' : 'color:var(--text-main);';
+
+            return `
+                <tr>
+                    <td data-label="Fecha"><small>${formatDate(item.rawDate)}</small></td>
+                    <td data-label="Tipo">${catBadge}</td>
+                    <td data-label="Concepto">
+                        <strong>${item.concept}</strong>
+                        <br><small style="color:var(--text-muted);">${item.detail}</small>
+                    </td>
+                    <td data-label="Cant./Duración">${item.qtyOrTime}</td>
+                    <td data-label="Importe"><strong>${formatMoney(item.amount)}</strong></td>
+                    <td data-label="Método">${item.paymentMethod}</td>
+                    <td data-label="Estado / Obs">
+                        <span style="${statusClass}">${item.status}</span>
+                        ${item.notes ? `<br><small style="color:var(--text-muted);">${item.notes}</small>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.exportChildHistoryPdf = () => {
+        const { child, timeline, stats } = getChildTimelineData(currentHistoryChildId);
+        if (!child || timeline.length === 0) {
+            return showToast("No hay registros en el expediente para exportar", "error");
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+
+        pdf.setFontSize(16);
+        pdf.text(state.config.brandName || 'KinderControlPro', 14, 15);
+        pdf.setFontSize(12);
+        pdf.text(`Ficha y Expediente Histórico del Niño`, 14, 22);
+
+        pdf.setFontSize(10);
+        pdf.text(`Nombre del Niño: ${child.name}`, 14, 29);
+        pdf.text(`Tutor: ${child.parentName} | Teléfono: ${child.phone}`, 14, 34);
+        pdf.text(`Fecha de Emisión: ${formatDate(new Date())}`, 14, 39);
+
+        const tableBody = timeline.map(item => [
+            formatDate(item.rawDate),
+            item.categoryLabel,
+            item.concept,
+            item.qtyOrTime,
+            formatMoney(item.amount),
+            item.paymentMethod,
+            item.status
+        ]);
+
+        pdf.autoTable({
+            startY: 44,
+            head: [['Fecha', 'Categoría', 'Concepto', 'Cant./Tiempo', 'Importe', 'Método', 'Estado']],
+            body: tableBody,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [30, 74, 118] }
+        });
+
+        const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 50;
+        pdf.setFontSize(10);
+        pdf.text(`Resumen General del Expediente:`, 14, finalY + 10);
+        pdf.text(`- Horas Totales en Estancia: ${stats.totalVisitsTimeStr}`, 14, finalY + 16);
+        pdf.text(`- Gastado en Tienda: ${formatMoney(stats.totalProductSpent)}`, 14, finalY + 22);
+        pdf.text(`- Planes Adquiridos: ${stats.totalPlansCount}`, 14, finalY + 28);
+        pdf.text(`- Inversión Total Histórica: ${formatMoney(stats.totalSpent)}`, 14, finalY + 34);
+
+        pdf.save(`expediente_${child.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`);
+        showToast("Expediente PDF descargado");
     };
 
     // --- PLANS ---
