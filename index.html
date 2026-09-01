@@ -577,7 +577,7 @@
                                     <div id="selectedChildParent" style="font-size: 0.9rem; color: var(--text-muted);">-</div>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAccount" onclick="if($('selectedChildId').value) openAccountModal($('selectedChildId').value)">
+                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAccount" onclick="openAccountModal($('selectedChildId') ? $('selectedChildId').value : null)">
                                 <i class="fas fa-wallet" style="color:var(--primary);"></i> Estado de Cuenta
                             </button>
                             <input type="hidden" id="selectedChildId">
@@ -683,10 +683,22 @@
                         </div>
                     </div>
                     <div class="card-body">
+                        <!-- BOTONES DE FILTRO RÁPIDO POR SECCIÓN -->
+                        <div style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap;" id="invCategoryChips">
+                            <button type="button" class="btn btn-sm btn-primary" id="invCatBtn_all" onclick="setInvCategoryFilter('')" style="font-size:0.85rem; padding:6px 14px; border-radius:20px;">
+                                <i class="fas fa-border-all"></i> Todos
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" id="invCatBtn_snacks" onclick="setInvCategoryFilter('snacks')" style="font-size:0.85rem; padding:6px 14px; border-radius:20px;">
+                                🍿 Snacks
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" id="invCatBtn_talleres" onclick="setInvCategoryFilter('talleres')" style="font-size:0.85rem; padding:6px 14px; border-radius:20px;">
+                                🎨 Talleres
+                            </button>
+                        </div>
                         <div class="filters-bar" style="margin-bottom:15px; align-items:center;">
                             <div class="form-group" style="flex:1;">
-                                <label>Buscar Producto</label>
-                                <input type="text" id="prodSearchInput" placeholder="Nombre de producto...">
+                                <label>Buscar Producto o Taller</label>
+                                <input type="text" id="prodSearchInput" placeholder="Nombre de producto o taller...">
                             </div>
                             <div class="form-group">
                                 <label>Categoría</label>
@@ -1140,24 +1152,77 @@
 </div>
 
 <div id="checkoutModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 480px;">
+    <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header"><h2>Confirmar Salida</h2><button onclick="closeCheckoutModal()">×</button></div>
         <div class="modal-body">
             <p style="margin-bottom: 15px;">Niño: <strong id="coChildName">-</strong></p>
             <div class="form-group" style="margin-bottom: 15px;">
-                <label>Total a cobrar</label>
-                <div style="font-size:1.6rem;font-weight:800;color:var(--primary);" id="coTotal">$0.00</div>
+                <label for="coTotalInput" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Monto / Total a cobrar ($) *</span>
+                    <span id="coCalculatedBadge" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Sugerido: $0.00</span>
+                </label>
+                <input type="number" id="coTotalInput" step="any" min="0" style="font-size:1.4rem; font-weight:800; color:var(--primary); padding:10px 14px;" required oninput="onCheckoutTotalChange()">
                 <small class="hint" id="coExtraNote" style="color:var(--danger);font-weight:600;"></small>
             </div>
             <div class="form-group" id="coPayMethodGroup" style="margin-bottom: 15px; display: none;">
-                <label>Método de Pago *</label>
-                <select id="coPayMethod" required>
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Tarjeta">Tarjeta</option>
-                    <option value="Transferencia">Transferencia</option>
-                    <option value="Pendiente">Pendiente de Pago</option>
-                    <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
-                </select>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label style="font-weight:700; margin-bottom:0;">Método de Pago *</label>
+                    <label style="font-size:0.85rem; font-weight:600; color:var(--primary); cursor:pointer; display:flex; align-items:center; gap:6px; user-select:none;">
+                        <input type="checkbox" id="coSplitPayment" onchange="toggleCheckoutSplitPayment()" style="width:16px; height:16px; accent-color:var(--primary);">
+                        <span><i class="fas fa-columns"></i> Dividir pago (2 métodos)</span>
+                    </label>
+                </div>
+
+                <!-- Single payment method -->
+                <div id="coSinglePayGroup">
+                    <select id="coPayMethod">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Pendiente">Pendiente de Pago</option>
+                        <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
+                    </select>
+                </div>
+
+                <!-- Split payment (2 methods) -->
+                <div id="coSplitPayGroup" style="display:none; background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:12px;">
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Método 1</label>
+                            <select id="coPayMethod1" onchange="onCheckoutSplitMethodChange()">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Pendiente">Pendiente de Pago</option>
+                                <option value="A Cuenta">A Cuenta (Deuda)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Monto 1 ($)</label>
+                            <input type="number" id="coPayAmount1" step="any" min="0" placeholder="0.00" oninput="onCheckoutSplitAmount1Change()">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:8px;">
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Método 2</label>
+                            <select id="coPayMethod2" onchange="onCheckoutSplitMethodChange()">
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Pendiente">Pendiente de Pago</option>
+                                <option value="A Cuenta">A Cuenta (Deuda)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Monto 2 ($)</label>
+                            <input type="number" id="coPayAmount2" step="any" min="0" placeholder="0.00" oninput="onCheckoutSplitAmount2Change()">
+                        </div>
+                    </div>
+                    <div id="coSplitSummary" style="font-size:0.8rem; font-weight:700; display:flex; justify-content:space-between; padding-top:6px; border-top:1px dashed var(--border); color:var(--text-muted);">
+                        <span id="coSplitSumText">Suma: $0.00</span>
+                        <span id="coSplitDiffText">Restante: $0.00</span>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label>¿Quién recoge al niño? *</label>
@@ -1185,6 +1250,7 @@
                 <div class="receipt-line"><span>Prepago:</span> <span id="rPrepaid">-</span></div>
                 <div class="receipt-line"><span>Extra/Retraso:</span> <span id="rExtra">-</span></div>
                 <div class="receipt-line"><span>Recogió:</span> <span id="rPickedUp">-</span></div>
+                <div class="receipt-line"><span>Pago / Método:</span> <span id="rMethod" style="font-weight: 600; text-align: right; max-width: 60%;">-</span></div>
                 <div style="margin: 15px 0; border-top: 1px solid #eee;"></div>
                 <div class="receipt-total"><span>Total:</span> <span id="rTotal">$0.00</span></div>
                 <div style="margin-top: 20px; text-align: center; font-size: 0.7rem;" id="rFooter">-</div>
@@ -1232,11 +1298,15 @@
             <input type="hidden" id="editProductId">
             <div class="modal-body">
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Nombre del Producto *</label>
-                    <input type="text" id="pName" required placeholder="Ej: Chocochips 50g">
+                    <label>Nombre del Producto / Taller *</label>
+                    <input type="text" id="pName" required placeholder="Ej: Taller de Pintura o Galletas">
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Categoría *</label>
+                    <label>Categoría / Sección *</label>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatSnacks" onclick="selectQuickProductCategory('Snacks')" style="flex:1; border-radius:8px; font-weight:700;">🍿 Snacks</button>
+                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatTalleres" onclick="selectQuickProductCategory('Talleres')" style="flex:1; border-radius:8px; font-weight:700;">🎨 Talleres</button>
+                    </div>
                     <select id="pCategorySelect" required>
                         <option value="">-- Seleccionar Categoría --</option>
                     </select>
@@ -1331,7 +1401,14 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Seleccionar Plan *</label>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <label style="margin-bottom:0;">Seleccionar Plan *</label>
+                        <span id="apPlanCountBadge" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                    </div>
+                    <div style="position:relative; margin-bottom:8px;">
+                        <input type="text" id="apPlanSearch" placeholder="Escribe para buscar paquete o plan..." oninput="onApPlanSearchInput()" style="padding-left:36px; width:100%;">
+                        <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                    </div>
                     <select id="apPlanSelect" required onchange="onPlanSelectChange()">
                         <option value="">-- Seleccionar Plan --</option>
                     </select>
@@ -1349,66 +1426,138 @@
                     <div class="form-group"><label>Límite Horas/Día *</label><input type="number" id="apHoursPerDay" required min="1" step="any"></div>
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
-                    <label>Método de Pago *</label>
-                    <select id="apPayMethod" required>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Pendiente">Pendiente de Pago</option>
-                        <option value="A Cuenta">Cobrar a la cuenta del niño (Deuda)</option>
-                    </select>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="font-weight:700; margin-bottom:0;">Método de Pago *</label>
+                        <label style="font-size:0.85rem; font-weight:600; color:var(--primary); cursor:pointer; display:flex; align-items:center; gap:6px; user-select:none;">
+                            <input type="checkbox" id="apSplitPayment" onchange="toggleAssignPlanSplitPayment()" style="width:16px; height:16px; accent-color:var(--primary);">
+                            <span><i class="fas fa-columns"></i> Dividir pago (2 métodos)</span>
+                        </label>
+                    </div>
+                    <div id="apSinglePayGroup">
+                        <select id="apPayMethod">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="A Cuenta">Cobrar a la cuenta (Deuda)</option>
+                        </select>
+                    </div>
+                    <div id="apSplitPayGroup" style="display:none; background:#f8fafc; border:1px dashed var(--primary-light); padding:12px; border-radius:var(--radius-md);">
+                        <div class="form-grid" style="grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.75rem;">Método 1</label>
+                                <select id="apPayMethod1" style="padding:8px 10px;">
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="A Cuenta">A Cuenta (Deuda)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.75rem;">Monto 1 ($)</label>
+                                <input type="number" id="apPayAmount1" min="0" step="any" placeholder="0.00" oninput="onApSplitAmount1Change()" style="padding:8px 10px; font-weight:700;">
+                            </div>
+                        </div>
+                        <div class="form-grid" style="grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.75rem;">Método 2</label>
+                                <select id="apPayMethod2" style="padding:8px 10px;">
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="A Cuenta">A Cuenta (Deuda)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label style="font-size:0.75rem;">Monto 2 ($)</label>
+                                <input type="number" id="apPayAmount2" min="0" step="any" placeholder="0.00" oninput="onApSplitAmount2Change()" style="padding:8px 10px; font-weight:700;">
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; font-weight:700; border-top:1px solid #e2e8f0; padding-top:6px;">
+                            <span id="apSplitSumText" style="color:var(--text-muted);">Suma: $0.00</span>
+                            <span id="apSplitDiffText" style="color:var(--success);">✓ Cubierto 100%</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; text-transform:none;">
-                        <input type="checkbox" id="apIncludeInIncome" checked style="width:18px; height:18px;">
-                        Sumar cobro al importe diario / corte de caja
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="apIncludeInIncome" checked>
+                        <span>Sumar a corte de caja (Si se desmarca, no afectará el total en efectivo/caja de hoy)</span>
                     </label>
-                    <small class="hint" style="margin-left: 26px; font-size:0.8rem; color:var(--text-muted);">Desmarca esta opción si deseas asignar el paquete sin afectar el total de ingresos del día.</small>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline" onclick="closeAssignPlanModal()">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Asignar y Cobrar</button>
-            </div>
-        </form>
+                <div class="modal-footer" style="padding: 15px 0 0 0; margin-top: 20px;">
+                    <button type="button" class="btn btn-outline" onclick="closeAssignPlanModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Asignar y Cobrar</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- MODAL: VENTA DE PRODUCTO (CARRITO MULTI-ARTÍCULO) -->
-<div id="sellProductModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 680px;">
-        <div class="modal-header">
-            <h2><i class="fas fa-shopping-cart"></i> Registrar Venta de Productos</h2>
-            <button onclick="closeSellProductModal()">×</button>
-        </div>
-        <form id="sellProductForm">
-            <input type="hidden" id="spChildId">
-            <div class="modal-body">
-                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;" id="spChildHeader">
-                    <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
-                    <div>
-                        <div id="spChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
-                        <div id="spChildParent" style="font-size: 0.85rem; color: var(--text-muted);">-</div>
+    <!-- MODAL VENDER PRODUCTO A NIÑO O MOSTRADOR CON CARRITO -->
+    <div class="modal-overlay" id="sellProductModal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-shopping-cart"></i> Punto de Venta (Tiendita)</h2>
+                <button class="btn btn-outline btn-icon" onclick="closeSellProductModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="sellProductForm">
+                <input type="hidden" id="spChildId">
+                <div class="modal-body">
+                    <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;" id="spChildHeader">
+                        <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
+                        <div>
+                            <div id="spChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
+                            <div id="spChildParent" style="font-size: 0.85rem; color: var(--text-muted);">-</div>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group" style="margin-bottom: 15px; display: none;" id="spChildSearchGroup">
-                    <label>Seleccionar Niño *</label>
-                    <select id="spChildSelect">
-                        <option value="">-- Seleccionar Niño --</option>
-                    </select>
-                </div>
-
-                <!-- SECCIÓN PARA AGREGAR PRODUCTO AL CARRITO -->
-                <div style="background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
-                    <label style="font-weight: 700; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; display: block; margin-bottom: 10px;">
-                        <i class="fas fa-plus-circle"></i> Agregar Artículo al Carrito
-                    </label>
-                    <div class="form-group" style="margin-bottom: 10px;">
-                        <label>Seleccionar Producto *</label>
-                        <select id="spProductSelect" onchange="onSellProductChange()">
-                            <option value="">-- Seleccionar Producto --</option>
+                    <div class="form-group" style="margin-bottom: 15px; display: none;" id="spChildSearchGroup">
+                        <label>Seleccionar Niño *</label>
+                        <div style="position:relative; margin-bottom:8px;">
+                            <input type="text" id="spChildSearchInput" placeholder="Escribe nombre de niño o tutor..." oninput="onSpChildSearchInput()" style="padding-left:36px; width:100%;">
+                            <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                        </div>
+                        <select id="spChildSelect">
+                            <option value="">-- Seleccionar Niño --</option>
                         </select>
                     </div>
+
+                    <!-- SECCIÓN PARA AGREGAR PRODUCTO AL CARRITO -->
+                    <div style="background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                            <label style="font-weight: 700; color: var(--primary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0;">
+                                <i class="fas fa-plus-circle"></i> Agregar Artículo al Carrito
+                            </label>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="openAddProductModal()" style="font-size:0.75rem; padding:4px 8px;" title="Registrar un nuevo producto o taller">
+                                <i class="fas fa-plus"></i> + Nuevo Taller / Producto
+                            </button>
+                        </div>
+
+                        <!-- CATEGORY FILTER CHIPS -->
+                        <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;" id="spCategoryChips">
+                            <button type="button" class="btn btn-sm btn-primary" id="spCatBtn_all" onclick="setSellCategoryFilter('')" style="font-size:0.8rem; padding:4px 10px; border-radius:20px;">
+                                <i class="fas fa-border-all"></i> Todos
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" id="spCatBtn_snacks" onclick="setSellCategoryFilter('snacks')" style="font-size:0.8rem; padding:4px 10px; border-radius:20px;">
+                                🍿 Snacks
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" id="spCatBtn_talleres" onclick="setSellCategoryFilter('talleres')" style="font-size:0.8rem; padding:4px 10px; border-radius:20px;">
+                                🎨 Talleres
+                            </button>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 10px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <label style="margin-bottom:0;">Seleccionar Artículo / Taller *</label>
+                                <span id="spProductCountBadge" style="font-size:0.75rem; color:var(--text-muted);"></span>
+                            </div>
+                            <div style="position:relative; margin-bottom:8px;">
+                                <input type="text" id="spProductSearch" placeholder="Escribe nombre de producto o taller..." oninput="onSpProductSearchInput()" style="padding-left:36px; width:100%;">
+                                <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                            </div>
+                            <select id="spProductSelect" onchange="onSellProductChange()">
+                                <option value="">-- Seleccionar Producto --</option>
+                            </select>
+                        </div>
                     <div class="form-grid" style="grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; margin-bottom: 10px;">
                         <div class="form-group">
                             <label>Cantidad (Stock: <span id="spStockLabel">-</span>)</label>
@@ -1465,15 +1614,61 @@
                     <span id="spTotalVal" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">$0.00</span>
                 </div>
 
-                <div class="form-group">
-                    <label>Método de Pago *</label>
-                    <select id="spPayMethod" required>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Pendiente">Pendiente de Pago</option>
-                        <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
-                    </select>
+                <div class="form-group" id="spPayMethodContainer">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="font-weight:700; margin-bottom:0;">Método de Pago *</label>
+                        <label style="font-size:0.85rem; font-weight:600; color:var(--primary); cursor:pointer; display:flex; align-items:center; gap:6px; user-select:none;">
+                            <input type="checkbox" id="spSplitPayment" onchange="toggleSellProductSplitPayment()" style="width:16px; height:16px; accent-color:var(--primary);">
+                            <span><i class="fas fa-columns"></i> Dividir pago (2 métodos)</span>
+                        </label>
+                    </div>
+                    <div id="spSinglePayGroup">
+                        <select id="spPayMethod" required>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Pendiente">Pendiente de Pago</option>
+                            <option value="A Cuenta" id="spPayMethodACuenta">Cobrar a la cuenta del niño (Deuda)</option>
+                        </select>
+                    </div>
+                    <div id="spSplitPayGroup" style="display:none; background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:12px;">
+                        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Método 1</label>
+                                <select id="spPayMethod1">
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Pendiente">Pendiente de Pago</option>
+                                    <option value="A Cuenta">A Cuenta (Deuda)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Monto 1 ($)</label>
+                                <input type="number" id="spPayAmount1" step="any" min="0" placeholder="0.00" oninput="onSellSplitAmount1Change()">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:8px;">
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Método 2</label>
+                                <select id="spPayMethod2">
+                                    <option value="Tarjeta">Tarjeta</option>
+                                    <option value="Efectivo">Efectivo</option>
+                                    <option value="Transferencia">Transferencia</option>
+                                    <option value="Pendiente">Pendiente de Pago</option>
+                                    <option value="A Cuenta">A Cuenta (Deuda)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Monto 2 ($)</label>
+                                <input type="number" id="spPayAmount2" step="any" min="0" placeholder="0.00" oninput="onSellSplitAmount2Change()">
+                            </div>
+                        </div>
+                        <div id="spSplitSummary" style="font-size:0.8rem; font-weight:700; display:flex; justify-content:space-between; padding-top:6px; border-top:1px dashed var(--border); color:var(--text-muted);">
+                            <span id="spSplitSumText">Suma: $0.00</span>
+                            <span id="spSplitDiffText">Restante: $0.00</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1572,9 +1767,23 @@
 <!-- MODAL: ESTADO DE CUENTA -->
 <div id="accountModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header"><h2>Estado de Cuenta / Deudas</h2><button onclick="closeAccountModal()">×</button></div>
+        <div class="modal-header"><h2><i class="fas fa-wallet" style="color:var(--primary); margin-right:8px;"></i> Estado de Cuenta / Deudas</h2><button onclick="closeAccountModal()">×</button></div>
         <div class="modal-body">
-            <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
+            <!-- BUSCADOR / SELECTOR DE NIÑO -->
+            <div id="acChildSelectGroup" class="form-group" style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:18px;">
+                <label style="font-size:0.82rem; font-weight:700; color:var(--primary); text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-search"></i> Seleccionar Niño
+                </label>
+                <div style="position:relative; margin-bottom:8px;">
+                    <input type="text" id="acChildSearchInput" placeholder="Buscar por nombre de niño o tutor..." oninput="onAcChildSearchInput()" style="padding-left:36px; width:100%;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                </div>
+                <select id="acChildSelect" onchange="onAcChildSelectChange()" style="width:100%;">
+                    <option value="">-- Seleccionar Niño --</option>
+                </select>
+            </div>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;" id="acChildHeader">
                 <div class="logo-icon" style="background: var(--primary); width:36px; height:36px; font-size:1rem;"><i class="fas fa-user"></i></div>
                 <div>
                     <div id="acChildName" style="font-weight: 800; font-size: 1.1rem;">-</div>
@@ -1608,17 +1817,59 @@
             </div>
 
             <div id="acPaySection" style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 15px; display: none;">
-                <h4 style="color:#92400e; font-weight: 700; margin-bottom: 10px;"><i class="fas fa-cash-register"></i> Registrar Pago de Adeudo</h4>
-                <div class="form-grid" style="grid-template-columns: 1fr 1fr; align-items: flex-end; gap: 10px; margin-bottom: 0;">
-                    <div class="form-group">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="color:#92400e; font-weight: 700; margin-bottom: 0;"><i class="fas fa-cash-register"></i> Registrar Pago de Adeudo</h4>
+                    <label style="font-size:0.85rem; font-weight:600; color:#92400e; cursor:pointer; display:flex; align-items:center; gap:6px; user-select:none;">
+                        <input type="checkbox" id="acSplitPayment" onchange="toggleAccountSplitPayment()" style="width:16px; height:16px; accent-color:#92400e;">
+                        <span><i class="fas fa-columns"></i> Dividir pago</span>
+                    </label>
+                </div>
+                <div id="acSinglePayGroup" class="form-grid" style="grid-template-columns: 1fr 1fr; align-items: flex-end; gap: 10px; margin-bottom: 0;">
+                    <div class="form-group" style="margin-bottom:0;">
                         <label>Método de Pago</label>
                         <select id="acPayMethod">
                             <option value="Efectivo">Efectivo</option>
                             <option value="Tarjeta">Tarjeta</option>
-<option value="Transferencia">Transferencia</option>
+                            <option value="Transferencia">Transferencia</option>
                         </select>
                     </div>
                     <button id="acPayBtn" type="button" class="btn btn-primary" onclick="payDebt()" style="height: 48px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
+                </div>
+                <div id="acSplitPayGroup" style="display:none; background:rgba(255,255,255,0.7); border:1px solid #fef3c7; border-radius:var(--radius-md); padding:12px;">
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase;">Método 1</label>
+                            <select id="acPayMethod1">
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase;">Monto 1 ($)</label>
+                            <input type="number" id="acPayAmount1" step="any" min="0" placeholder="0.00" oninput="onAcSplitAmount1Change()">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; margin-bottom:8px;">
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase;">Método 2</label>
+                            <select id="acPayMethod2">
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Efectivo">Efectivo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:0.75rem; font-weight:700; color:#92400e; text-transform:uppercase;">Monto 2 ($)</label>
+                            <input type="number" id="acPayAmount2" step="any" min="0" placeholder="0.00" oninput="onAcSplitAmount2Change()">
+                        </div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <div id="acSplitSummary" style="font-size:0.8rem; font-weight:700; color:#92400e;">
+                            <span id="acSplitSumText">Suma: $0.00</span> · <span id="acSplitDiffText">Restante: $0.00</span>
+                        </div>
+                        <button id="acPaySplitBtn" type="button" class="btn btn-primary" onclick="payDebt()" style="height: 40px; border-radius:var(--radius-md);"><i class="fas fa-check-circle"></i> Liquidar Deuda</button>
+                    </div>
                 </div>
             </div>
             <div id="acNoDebtMsg" class="empty-state" style="padding: 15px; display: none;">
@@ -1712,12 +1963,32 @@
         custom: '⚙️ Personalizado'
     };
 
-    let state = {
+    const rawState = {
         children: [], activeSessions: [], history: [],
         categories: [], products: [], plans: [], sales: [], users: [],
         config: { brandName: 'KinderControlPro', hourlyRate: 150, fractionRate: 25, pin: '', footerMsg: 'Gracias' },
         currentSecureTab: null
     };
+
+    let state = new Proxy(rawState, {
+        get(target, prop) {
+            if (['children', 'activeSessions', 'history', 'categories', 'products', 'plans', 'sales', 'users'].includes(prop)) {
+                return Array.isArray(target[prop]) ? target[prop] : [];
+            }
+            if (prop === 'config') {
+                return target.config || {};
+            }
+            return target[prop];
+        },
+        set(target, prop, val) {
+            if (['children', 'activeSessions', 'history', 'categories', 'products', 'plans', 'sales', 'users'].includes(prop)) {
+                target[prop] = Array.isArray(val) ? val : [];
+            } else {
+                target[prop] = val;
+            }
+            return true;
+        }
+    });
 
     // Tabla de precios para la estancia normal prepago
     const NORMAL_STAY_RATES = {
@@ -2638,7 +2909,20 @@
                         </div>
                         <span class="kid-status-badge success" id="badge-${s.id}">A TIEMPO</span>
                     </div>
-                    <div class="time-box">
+
+                    <!-- DETALLE EXACTO DE HORARIOS: ENTRADA Y HORA DE RECOGIDA -->
+                    <div style="display: grid; grid-template-columns: 1fr 1.1fr; gap: 8px; margin: 0 1.25rem 12px 1.25rem;">
+                        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; display: flex; flex-direction: column;">
+                            <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><i class="fas fa-sign-in-alt"></i> Entrada</span>
+                            <strong style="font-size: 0.92rem; color: var(--text-main); margin-top: 2px;">${formatTimeShort(s.entryTime)}</strong>
+                        </div>
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 8px 10px; display: flex; flex-direction: column;">
+                            <span style="font-size: 0.68rem; font-weight: 800; color: #1e40af; text-transform: uppercase;"><i class="fas fa-clock"></i> Hora de Salida</span>
+                            <strong style="font-size: 1.05rem; color: #1e40af; font-weight: 800; margin-top: 2px;">${formatTimeShort(s.limitTime)}</strong>
+                        </div>
+                    </div>
+
+                    <div class="time-box" style="margin-top: 0;">
                         <div class="label" id="label-${s.id}">RESTANTE</div>
                         <div class="timer" id="timer-${s.id}" data-limit="${s.limitTime}" data-id="${s.id}">00:00:00</div>
                     </div>
@@ -2747,6 +3031,66 @@
         return remainder >= 10 ? wholeHours + 1 : wholeHours;
     }
 
+    // --- CONTROLADORES DE PAGO DIVIDIDO Y EDICIÓN DE MONTOS ---
+    window.toggleCheckoutSplitPayment = () => {
+        const isSplit = $('coSplitPayment') && $('coSplitPayment').checked;
+        if ($('coSinglePayGroup')) $('coSinglePayGroup').style.display = isSplit ? 'none' : 'block';
+        if ($('coSplitPayGroup')) $('coSplitPayGroup').style.display = isSplit ? 'block' : 'none';
+        if (isSplit) {
+            const total = Math.max(0, parseFloat($('coTotalInput').value) || 0);
+            const half = Math.round((total / 2) * 100) / 100;
+            if (!$('coPayAmount1').value || parseFloat($('coPayAmount1').value) === 0) {
+                $('coPayAmount1').value = half > 0 ? half.toFixed(2) : '';
+                $('coPayAmount2').value = (total - half) > 0 ? (total - half).toFixed(2) : '';
+            }
+            updateCheckoutSplitSummary();
+        }
+    };
+
+    window.onCheckoutTotalChange = () => {
+        const isSplit = $('coSplitPayment') && $('coSplitPayment').checked;
+        if (isSplit) {
+            onCheckoutSplitAmount1Change();
+        }
+    };
+
+    window.onCheckoutSplitAmount1Change = () => {
+        const total = Math.max(0, parseFloat($('coTotalInput').value) || 0);
+        const a1 = Math.max(0, parseFloat($('coPayAmount1').value) || 0);
+        const remainder = Math.max(0, Math.round((total - a1) * 100) / 100);
+        $('coPayAmount2').value = remainder > 0 ? remainder.toFixed(2) : '0.00';
+        updateCheckoutSplitSummary();
+    };
+
+    window.onCheckoutSplitAmount2Change = () => {
+        updateCheckoutSplitSummary();
+    };
+
+    window.onCheckoutSplitMethodChange = () => {
+        updateCheckoutSplitSummary();
+    };
+
+    function updateCheckoutSplitSummary() {
+        if (!$('coSplitSumText') || !$('coSplitDiffText')) return;
+        const total = Math.max(0, parseFloat($('coTotalInput').value) || 0);
+        const a1 = Math.max(0, parseFloat($('coPayAmount1').value) || 0);
+        const a2 = Math.max(0, parseFloat($('coPayAmount2').value) || 0);
+        const sum = Math.round((a1 + a2) * 100) / 100;
+        const diff = Math.round((total - sum) * 100) / 100;
+
+        $('coSplitSumText').innerText = `Suma: ${formatMoney(sum)}`;
+        if (Math.abs(diff) < 0.01) {
+            $('coSplitDiffText').innerText = '✓ Cubierto 100%';
+            $('coSplitDiffText').style.color = 'var(--success)';
+        } else if (diff > 0) {
+            $('coSplitDiffText').innerText = `Faltan: ${formatMoney(diff)}`;
+            $('coSplitDiffText').style.color = 'var(--danger)';
+        } else {
+            $('coSplitDiffText').innerText = `Excedente: ${formatMoney(Math.abs(diff))}`;
+            $('coSplitDiffText').style.color = 'var(--warning)';
+        }
+    }
+
     // --- CHECKOUT ---
     window.requestCheckout = id => {
         const s = state.activeSessions.find(x => x.id === id);
@@ -2808,8 +3152,13 @@
 
         pendingCheckoutId = id;
         $('coChildName').innerText = child.name;
-        $('coTotal').innerText = formatMoney(total);
         
+        if ($('coTotalInput')) $('coTotalInput').value = total.toFixed(2);
+        if ($('coCalculatedBadge')) $('coCalculatedBadge').innerText = 'Sugerido: ' + formatMoney(total);
+        if ($('coSplitPayment')) $('coSplitPayment').checked = false;
+        if ($('coSinglePayGroup')) $('coSinglePayGroup').style.display = 'block';
+        if ($('coSplitPayGroup')) $('coSplitPayGroup').style.display = 'none';
+
         if (isPlan) {
             $('coExtraNote').innerText = `Consumo plan: ${planHoursDeducted.toFixed(1)}h deducidas. ` +
                 (extraCharge > 0 ? `Exceso: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}` : 'Sin recargo extra.');
@@ -2824,6 +3173,14 @@
         $('coPickedUpBy').value = child.parentName || '';
         $('coAuthorizedHint').innerText = child.authorized ? `Autorizados: ${child.authorized}` : 'Solo el tutor registrado.';
         
+        if ($('coPayMethod')) $('coPayMethod').value = (s.method && ['Efectivo', 'Tarjeta', 'Transferencia', 'Pendiente', 'A Cuenta'].includes(s.method)) ? s.method : 'Efectivo';
+        if ($('coPayMethod1')) $('coPayMethod1').value = 'Efectivo';
+        if ($('coPayMethod2')) $('coPayMethod2').value = 'Tarjeta';
+        const half = Math.round((total / 2) * 100) / 100;
+        if ($('coPayAmount1')) $('coPayAmount1').value = half.toFixed(2);
+        if ($('coPayAmount2')) $('coPayAmount2').value = (total - half).toFixed(2);
+        updateCheckoutSplitSummary();
+
         if (total > 0) {
             $('coPayMethodGroup').style.display = 'block';
         } else {
@@ -2854,7 +3211,7 @@
         
         let prepaidCost = 0;
         let extraCharge = 0;
-        let total = 0;
+        let calculatedTotal = 0;
         let extraTimeStr = '0m';
         let planHoursDeducted = 0;
         
@@ -2874,11 +3231,11 @@
 
             const extraBillableHours = Math.max(0, billableHours - planHoursDeducted);
             extraCharge = extraBillableHours * ratePerHour;
-            total = extraCharge;
+            calculatedTotal = extraCharge;
 
             extraTimeStr = extraBillableHours > 0 ? `${extraBillableHours}h extra` : '0m';
         } else if (isCortesia) {
-            total = 0;
+            calculatedTotal = 0;
             extraCharge = 0;
             extraTimeStr = '0m';
         } else {
@@ -2894,15 +3251,59 @@
                 extraTimeStr = extraHrs > 0 ? `${extraHrs}h ${extraMins}m` : `${extraMins}m`;
             }
             prepaidCost = getPrepaidRateForHours(s.hoursPaid);
-            total = prepaidCost + extraCharge;
+            calculatedTotal = prepaidCost + extraCharge;
         }
 
         if (s.customExtraCost) {
             extraCharge += s.customExtraCost;
-            total += s.customExtraCost;
+            calculatedTotal += s.customExtraCost;
         }
 
-        const payMethod = total > 0 ? $('coPayMethod').value : (isPlan ? 'Plan' : (isCortesia ? 'Cortesía' : s.method));
+        // Obtener el total editado por el usuario (o el calculado por defecto)
+        const rawEditedTotal = $('coTotalInput') ? parseFloat($('coTotalInput').value) : calculatedTotal;
+        if (isNaN(rawEditedTotal) || rawEditedTotal < 0) {
+            return showToast('Por favor ingresa un monto válido a cobrar', 'error');
+        }
+        const total = rawEditedTotal;
+
+        // Determinar métodos y desgloses de pago
+        const isSplit = $('coSplitPayment') && $('coSplitPayment').checked && total > 0;
+        let payMethod = '';
+        let splits = [];
+        let pendingDebtToAdd = 0;
+
+        if (isSplit) {
+            const m1 = $('coPayMethod1').value;
+            const a1 = Math.max(0, parseFloat($('coPayAmount1').value) || 0);
+            const m2 = $('coPayMethod2').value;
+            const a2 = Math.max(0, parseFloat($('coPayAmount2').value) || 0);
+
+            if (a1 < 0 || a2 < 0) return showToast('Los montos del pago dividido no pueden ser negativos', 'error');
+            if (Math.abs((a1 + a2) - total) > 0.05) {
+                return showToast(`La suma de los montos ($${(a1 + a2).toFixed(2)}) debe coincidir con el total a cobrar ($${total.toFixed(2)})`, 'error');
+            }
+
+            splits = [
+                { method: m1, amount: a1 },
+                { method: m2, amount: a2 }
+            ].filter(sp => sp.amount > 0);
+
+            payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
+
+            splits.forEach(sp => {
+                if (sp.method === 'A Cuenta' || sp.method === 'Pendiente') {
+                    pendingDebtToAdd += sp.amount;
+                }
+            });
+        } else {
+            payMethod = total > 0 ? $('coPayMethod').value : (isPlan ? 'Plan' : (isCortesia ? 'Cortesía' : s.method));
+            if (total > 0) {
+                splits = [{ method: payMethod, amount: total }];
+                if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
+                    pendingDebtToAdd = total;
+                }
+            }
+        }
 
         let conceptName = 'Estancia';
         if (isPlan) {
@@ -2913,6 +3314,9 @@
             conceptName = 'Estancia de Cortesía';
         }
 
+        const isFullyPending = (pendingDebtToAdd === total && total > 0);
+        const isPartialPending = (pendingDebtToAdd > 0 && pendingDebtToAdd < total);
+
         const log = {
             childId: child.id,
             childName: child.name,
@@ -2922,6 +3326,7 @@
             durationMinutes,
             total,
             method: payMethod,
+            splits: splits,
             notes: s.notes || '',
             pickedUpBy,
             extra: extraCharge > 0,
@@ -2932,8 +3337,8 @@
             serviceType: s.serviceType || 'normal',
             concept: conceptName,
             planHoursDeducted,
-            status: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? 'pending' : 'paid',
-            paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString()
+            status: isFullyPending ? 'pending' : (isPartialPending ? 'partial' : 'paid'),
+            paymentDate: isFullyPending ? null : now.toISOString()
         };
 
         $('coConfirmBtn').disabled = true;
@@ -2954,8 +3359,8 @@
                 }
             }
 
-            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
-                const newDebt = (child.debt || 0) + total;
+            if (pendingDebtToAdd > 0) {
+                const newDebt = (child.debt || 0) + pendingDebtToAdd;
                 const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
                 await updateDoc(doc(db, "kids", child.id), {
                     debt: newDebt,
@@ -2979,8 +3384,9 @@
             }
             $('rExtra').innerText = extraCharge > 0 ? `${extraTimeStr} (${formatMoney(extraCharge)})` : 'Ninguno';
             $('rPickedUp').innerText = pickedUpBy;
+            if ($('rMethod')) $('rMethod').innerText = payMethod || 'Efectivo';
             $('rTotal').innerText = formatMoney(total);
-            $('rFooter').innerText = (state.config.footerMsg || '') + ((payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? '\n* PAGO PENDIENTE / CARGADO A CUENTA *' : '');
+            $('rFooter').innerText = (state.config.footerMsg || '') + (pendingDebtToAdd > 0 ? `\n* PAGO PENDIENTE / CARGADO A CUENTA: ${formatMoney(pendingDebtToAdd)} *` : '');
 
             closeCheckoutModal();
             $('receiptModal').style.display = 'flex';
@@ -2994,12 +3400,129 @@
     window.closeReceiptModal = () => $('receiptModal').style.display = 'none';
 
     // --- DEBT PAYOFF & ACCOUNT STATE ---
-    window.openAccountModal = async childId => {
-        window.currentAccountChildId = childId;
-        const child = state.children.find(c => c.id === childId);
-        if (!child) return;
+    window.toggleAccountSplitPayment = () => {
+        const isSplit = $('acSplitPayment') && $('acSplitPayment').checked;
+        if ($('acSinglePayGroup')) $('acSinglePayGroup').style.display = isSplit ? 'none' : 'grid';
+        if ($('acSplitPayGroup')) $('acSplitPayGroup').style.display = isSplit ? 'block' : 'none';
+        if (isSplit) {
+            const childId = window.currentAccountChildId;
+            const child = state.children.find(c => c.id === childId);
+            const totalDebt = child ? (parseFloat(child.debt) || 0) : 0;
+            const half = Math.round((totalDebt / 2) * 100) / 100;
+            if (!$('acPayAmount1').value || parseFloat($('acPayAmount1').value) === 0) {
+                $('acPayAmount1').value = half > 0 ? half.toFixed(2) : '';
+                $('acPayAmount2').value = (totalDebt - half) > 0 ? (totalDebt - half).toFixed(2) : '';
+            }
+            updateAcSplitSummary();
+        }
+    };
 
-        $('acChildName').innerText = child.name;
+    window.onAcSplitAmount1Change = () => {
+        const childId = window.currentAccountChildId;
+        const child = state.children.find(c => c.id === childId);
+        const totalDebt = child ? (parseFloat(child.debt) || 0) : 0;
+        const a1 = Math.max(0, parseFloat($('acPayAmount1').value) || 0);
+        const remainder = Math.max(0, Math.round((totalDebt - a1) * 100) / 100);
+        $('acPayAmount2').value = remainder > 0 ? remainder.toFixed(2) : '0.00';
+        updateAcSplitSummary();
+    };
+
+    window.onAcSplitAmount2Change = () => {
+        updateAcSplitSummary();
+    };
+
+    function updateAcSplitSummary() {
+        if (!$('acSplitSumText') || !$('acSplitDiffText')) return;
+        const childId = window.currentAccountChildId;
+        const child = state.children.find(c => c.id === childId);
+        const totalDebt = child ? (parseFloat(child.debt) || 0) : 0;
+        const a1 = Math.max(0, parseFloat($('acPayAmount1').value) || 0);
+        const a2 = Math.max(0, parseFloat($('acPayAmount2').value) || 0);
+        const sum = Math.round((a1 + a2) * 100) / 100;
+        const diff = Math.round((totalDebt - sum) * 100) / 100;
+
+        $('acSplitSumText').innerText = `Suma: ${formatMoney(sum)}`;
+        if (Math.abs(diff) < 0.01) {
+            $('acSplitDiffText').innerText = '✓ Cubierto 100%';
+            $('acSplitDiffText').style.color = 'var(--success)';
+        } else if (diff > 0) {
+            $('acSplitDiffText').innerText = `Faltan: ${formatMoney(diff)}`;
+            $('acSplitDiffText').style.color = 'var(--danger)';
+        } else {
+            $('acSplitDiffText').innerText = `Excedente: ${formatMoney(Math.abs(diff))}`;
+            $('acSplitDiffText').style.color = 'var(--warning)';
+        }
+    }
+
+    function populateAccountChildDropdown(filterText = '') {
+        const q = (filterText || '').trim().toLowerCase();
+        const children = state.children || [];
+        const filtered = q
+            ? children.filter(c => (c.name || '').toLowerCase().includes(q) || (c.parentName || '').toLowerCase().includes(q) || (c.phone || '').includes(q))
+            : children;
+
+        // Ordenar niños: primero los que tienen deuda
+        filtered.sort((a, b) => (parseFloat(b.debt || 0)) - (parseFloat(a.debt || 0)));
+
+        const options = filtered.map(c => {
+            const d = parseFloat(c.debt || 0);
+            const debtLabel = d > 0 ? ` ⚠️ [Debe ${formatMoney(d)}]` : ' [Al corriente]';
+            return `<option value="${c.id}">${c.name || 'Sin nombre'} (${c.parentName || '-'})${debtLabel}</option>`;
+        }).join('');
+
+        if ($('acChildSelect')) {
+            $('acChildSelect').innerHTML = `<option value="">-- ${filtered.length === 0 ? 'Sin coincidencias' : 'Seleccionar Niño'} (${filtered.length}) --</option>` + options;
+        }
+
+        if (window.currentAccountChildId && $('acChildSelect')) {
+            $('acChildSelect').value = window.currentAccountChildId;
+        }
+    }
+
+    window.onAcChildSearchInput = () => {
+        const q = $('acChildSearchInput') ? $('acChildSearchInput').value : '';
+        populateAccountChildDropdown(q);
+    };
+
+    window.onAcChildSelectChange = () => {
+        const val = $('acChildSelect') ? $('acChildSelect').value : '';
+        if (val) {
+            openAccountModal(val);
+        }
+    };
+
+    window.openAccountModal = async childId => {
+        const children = state.children || [];
+        
+        // Si no se pasó childId, intentar usar el actual, el de recepción, o el primero con deuda
+        if (!childId) {
+            if ($('selectedChildId') && $('selectedChildId').value) {
+                childId = $('selectedChildId').value;
+            } else {
+                const childWithDebt = children.find(c => parseFloat(c.debt || 0) > 0);
+                childId = childWithDebt ? childWithDebt.id : (children.length > 0 ? children[0].id : null);
+            }
+        }
+
+        window.currentAccountChildId = childId;
+        if ($('acChildSearchInput')) $('acChildSearchInput').value = '';
+        populateAccountChildDropdown();
+
+        const child = children.find(c => c.id === childId);
+        if (!child) {
+            if ($('acChildName')) $('acChildName').innerText = 'Ningún niño seleccionado';
+            if ($('acChildParent')) $('acChildParent').innerText = 'Selecciona un niño en la lista superior para ver su estado de cuenta';
+            if ($('acDebtVal')) $('acDebtVal').innerText = '$0.00';
+            if ($('acDebtSinceVal')) $('acDebtSinceVal').innerText = '-';
+            if ($('acChargesBody')) $('acChargesBody').innerHTML = '';
+            if ($('acPaySection')) $('acPaySection').style.display = 'none';
+            if ($('acNoDebtMsg')) $('acNoDebtMsg').style.display = 'block';
+            if ($('accountModal')) $('accountModal').style.display = 'flex';
+            return;
+        }
+
+        if ($('acChildSelect')) $('acChildSelect').value = child.id;
+        $('acChildName').innerText = child.name || 'Sin Nombre';
         if ($('acChildParent')) {
             $('acChildParent').innerText = `Tutor: ${child.parentName || '-'} · Tel: ${child.phone || '-'}`;
         }
@@ -3013,9 +3536,22 @@
             $('acDebtSinceVal').innerText = '-';
         }
 
+        if ($('acSplitPayment')) $('acSplitPayment').checked = false;
+        if ($('acSinglePayGroup')) $('acSinglePayGroup').style.display = 'grid';
+        if ($('acSplitPayGroup')) $('acSplitPayGroup').style.display = 'none';
+        if ($('acPayMethod')) $('acPayMethod').value = 'Efectivo';
+        if ($('acPayMethod1')) $('acPayMethod1').value = 'Efectivo';
+        if ($('acPayMethod2')) $('acPayMethod2').value = 'Tarjeta';
+        const half = Math.round((totalDebt / 2) * 100) / 100;
+        if ($('acPayAmount1')) $('acPayAmount1').value = half.toFixed(2);
+        if ($('acPayAmount2')) $('acPayAmount2').value = (totalDebt - half).toFixed(2);
+        updateAcSplitSummary();
+
         // Obtener historial de sesiones y ventas pendientes
-        const unpaidSessions = state.history.filter(h => h.childId === childId && (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid')));
-        const unpaidSales = state.sales.filter(s => s.childId === childId && (s.status === 'pending' || ((s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente') && s.status !== 'paid')));
+        const historyList = state.history || [];
+        const salesList = state.sales || [];
+        const unpaidSessions = historyList.filter(h => h.childId === childId && (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid')));
+        const unpaidSales = salesList.filter(s => s.childId === childId && (s.status === 'pending' || ((s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente') && s.status !== 'paid')));
 
         if (totalDebt <= 0 && unpaidSessions.length === 0 && unpaidSales.length === 0) {
             $('acChargesBody').innerHTML = '';
@@ -3080,15 +3616,42 @@
             return;
         }
 
-        const payMethod = $('acPayMethod') ? $('acPayMethod').value : 'Efectivo';
+        const isSplit = $('acSplitPayment') && $('acSplitPayment').checked;
+        let payMethod = '';
+        let splits = [];
+
+        if (isSplit) {
+            const m1 = $('acPayMethod1').value;
+            const a1 = Math.max(0, parseFloat($('acPayAmount1').value) || 0);
+            const m2 = $('acPayMethod2').value;
+            const a2 = Math.max(0, parseFloat($('acPayAmount2').value) || 0);
+
+            if (a1 < 0 || a2 < 0) return showToast('Los montos no pueden ser negativos', 'error');
+            if (Math.abs((a1 + a2) - currentDebt) > 0.05 && currentDebt > 0) {
+                return showToast(`La suma de los montos ($${(a1 + a2).toFixed(2)}) debe coincidir con la deuda ($${currentDebt.toFixed(2)})`, 'error');
+            }
+
+            splits = [
+                { method: m1, amount: a1 },
+                { method: m2, amount: a2 }
+            ].filter(sp => sp.amount > 0);
+
+            payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
+        } else {
+            payMethod = $('acPayMethod') ? $('acPayMethod').value : 'Efectivo';
+            splits = [{ method: payMethod, amount: currentDebt }];
+        }
+
         const now = new Date().toISOString();
 
         if ($('acPayBtn')) $('acPayBtn').disabled = true;
+        if ($('acPaySplitBtn')) $('acPaySplitBtn').disabled = true;
         try {
             for (const s of unpaidSales) {
                 await updateDoc(doc(db, "sales", s.id), {
                     status: 'paid',
                     paymentMethod: payMethod,
+                    splits: splits,
                     paymentDate: now
                 });
             }
@@ -3097,6 +3660,7 @@
                 await updateDoc(doc(db, "history", s.id), {
                     status: 'paid',
                     method: payMethod,
+                    splits: splits,
                     paymentDate: now
                 });
             }
@@ -3112,6 +3676,7 @@
             showToast("Error al liquidar deuda: " + err.message, "error");
         } finally {
             if ($('acPayBtn')) $('acPayBtn').disabled = false;
+            if ($('acPaySplitBtn')) $('acPaySplitBtn').disabled = false;
         }
     };
 
@@ -3161,18 +3726,26 @@
             $('historyTableBody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-history"></i><p>No hay registros con estos filtros</p></div></td></tr>`;
             return;
         }
-        $('historyTableBody').innerHTML = rows.map(h => `
+        $('historyTableBody').innerHTML = rows.map(h => {
+            let statusBadge = '';
+            if (h.status === 'pending') {
+                statusBadge = ' (<span style="color:var(--danger);font-weight:700;">Debe</span>)';
+            } else if (h.status === 'partial') {
+                statusBadge = ' (<span style="color:var(--warning);font-weight:700;">Parcial</span>)';
+            }
+            return `
             <tr>
                 <td data-label="Fecha">${formatDate(h.date)}</td>
                 <td data-label="Niño"><strong>${h.childName}</strong></td>
                 <td data-label="Entrada / Salida">${formatTimeShort(h.entry)} - ${formatTimeShort(h.exit)}</td>
                 <td data-label="Tiempo Total">${formatDuration(h.durationMinutes)}</td>
-                <td data-label="Importe">${formatMoney(h.total)} ${h.status === 'pending' ? '(<span style="color:var(--danger);font-weight:700;">Debe</span>)' : ''}</td>
-                <td data-label="Método">${h.method}</td>
+                <td data-label="Importe">${formatMoney(h.total)}${statusBadge}</td>
+                <td data-label="Método"><span style="font-size:0.85rem; font-weight:600;">${h.method || 'Efectivo'}</span></td>
                 <td data-label="Recogió">${h.pickedUpBy || '-'}</td>
                 <td data-label="Obs."><small>${h.notes || '-'}</small></td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
     }
     $('historyFrom').oninput = renderHistory;
     $('historyTo').oninput = renderHistory;
@@ -3216,22 +3789,61 @@
         const historyTotal = rows.reduce((acc, h) => acc + (h.total || 0), 0);
         const salesTotal = salesRows.reduce((acc, s) => acc + (s.amount || 0), 0);
         const total = historyTotal + salesTotal;
-        
-        const cashHistory = rows.filter(h => h.method === 'Efectivo').reduce((acc, h) => acc + (h.total || 0), 0);
-        const cashSales = salesRows.filter(s => s.paymentMethod === 'Efectivo').reduce((acc, s) => acc + (s.amount || 0), 0);
-        const cash = cashHistory + cashSales;
-        
-        const cardHistory = rows.filter(h => h.method === 'Tarjeta').reduce((acc, h) => acc + (h.total || 0), 0);
-        const cardSales = salesRows.filter(s => s.paymentMethod === 'Tarjeta').reduce((acc, s) => acc + (s.amount || 0), 0);
-        const card = cardHistory + cardSales;
 
-        const transferHistory = rows.filter(h => h.method === 'Transferencia').reduce((acc, h) => acc + (h.total || 0), 0);
-        const transferSales = salesRows.filter(s => s.paymentMethod === 'Transferencia').reduce((acc, s) => acc + (s.amount || 0), 0);
-        const transfer = transferHistory + transferSales;
+        function sumForMethod(targetMethod) {
+            let sum = 0;
+            rows.forEach(h => {
+                if (h.status !== 'pending') {
+                    if (h.splits && Array.isArray(h.splits) && h.splits.length > 0) {
+                        h.splits.forEach(sp => {
+                            if (sp.method === targetMethod) sum += (parseFloat(sp.amount) || 0);
+                        });
+                    } else if (h.method === targetMethod) {
+                        sum += (parseFloat(h.total) || 0);
+                    }
+                }
+            });
+            salesRows.forEach(s => {
+                if (s.status !== 'pending') {
+                    if (s.splits && Array.isArray(s.splits) && s.splits.length > 0) {
+                        s.splits.forEach(sp => {
+                            if (sp.method === targetMethod) sum += (parseFloat(sp.amount) || 0);
+                        });
+                    } else if (s.paymentMethod === targetMethod) {
+                        sum += (parseFloat(s.amount) || 0);
+                    }
+                }
+            });
+            return sum;
+        }
+
+        const cash = sumForMethod('Efectivo');
+        const card = sumForMethod('Tarjeta');
+        const transfer = sumForMethod('Transferencia');
         
-        const outstandingHistory = rows.filter(h => (h.status === 'pending' || h.method === 'A Cuenta' || h.method === 'Pendiente') && h.status !== 'paid').reduce((acc, h) => acc + (h.total || 0), 0);
-        const outstandingSales = salesRows.filter(s => (s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente' || s.status === 'pending') && s.status !== 'paid').reduce((acc, s) => acc + (s.amount || 0), 0);
-        const outstanding = outstandingHistory + outstandingSales;
+        let outstanding = 0;
+        rows.forEach(h => {
+            if (h.splits && Array.isArray(h.splits) && h.splits.length > 0) {
+                h.splits.forEach(sp => {
+                    if ((sp.method === 'A Cuenta' || sp.method === 'Pendiente') && h.status !== 'paid') {
+                        outstanding += (parseFloat(sp.amount) || 0);
+                    }
+                });
+            } else if ((h.status === 'pending' || h.method === 'A Cuenta' || h.method === 'Pendiente') && h.status !== 'paid') {
+                outstanding += (parseFloat(h.total) || 0);
+            }
+        });
+        salesRows.forEach(s => {
+            if (s.splits && Array.isArray(s.splits) && s.splits.length > 0) {
+                s.splits.forEach(sp => {
+                    if ((sp.method === 'A Cuenta' || sp.method === 'Pendiente') && s.status !== 'paid') {
+                        outstanding += (parseFloat(sp.amount) || 0);
+                    }
+                });
+            } else if ((s.paymentMethod === 'A Cuenta' || s.paymentMethod === 'Pendiente' || s.status === 'pending') && s.status !== 'paid') {
+                outstanding += (parseFloat(s.amount) || 0);
+            }
+        });
         
         const visits = rows.length + salesRows.length;
         const avg = visits > 0 ? (total / visits) : 0;
@@ -3316,9 +3928,35 @@
         $('prodCategoryFilter').innerHTML = `<option value="">Todas</option>` + options;
     }
 
+    window.selectQuickProductCategory = async catName => {
+        let cat = state.categories.find(c => (c.name || '').toLowerCase().includes(catName.toLowerCase()));
+        if (!cat) {
+            try {
+                const docRef = await addDoc(collection(db, "categories"), { name: catName });
+                cat = { id: docRef.id, name: catName };
+                state.categories.push(cat);
+                populateCategoryDropdowns();
+            } catch (err) {
+                console.error("Error auto-creando categoria:", err);
+            }
+        }
+        if (cat && $('pCategorySelect')) {
+            $('pCategorySelect').value = cat.id;
+        }
+        if (catName.toLowerCase().includes('taller')) {
+            if ($('pIsInfinite')) {
+                $('pIsInfinite').checked = true;
+                if ($('pStock')) {
+                    $('pStock').disabled = true;
+                    $('pStock').value = 0;
+                }
+            }
+        }
+    };
+
     // --- PRODUCTS ---
     window.openAddProductModal = () => {
-        $('productModalTitle').innerText = "Nuevo Producto";
+        $('productModalTitle').innerText = "Nuevo Producto / Taller";
         $('editProductId').value = '';
         $('productForm').reset();
         if ($('pIsInfinite')) $('pIsInfinite').checked = false;
@@ -3365,18 +4003,46 @@
         $('pCost').value = p.cost || 0;
         $('pPrice').value = p.price || 0;
         $('pEmployeePrice').value = p.employeePrice !== undefined && p.employeePrice !== null ? p.employeePrice : '';
-        $('productModalTitle').innerText = "Editar Producto";
+        $('productModalTitle').innerText = "Editar Producto / Taller";
         $('productModal').style.display = 'flex';
     };
 
     window.deleteProduct = async id => {
-        if (!confirm("¿Eliminar este producto?")) return;
+        if (!confirm("¿Eliminar este producto o taller?")) return;
         try {
             await deleteDoc(doc(db, "products", id));
             showToast("Producto eliminado");
         } catch (err) {
             showToast("Error al eliminar producto: " + err.message, "error");
         }
+    };
+
+    let currentInvCategory = '';
+
+    window.setInvCategoryFilter = catKey => {
+        currentInvCategory = catKey;
+        ['all', 'snacks', 'talleres'].forEach(k => {
+            const btn = $(`invCatBtn_${k}`);
+            if (btn) {
+                if (k === catKey || (k === 'all' && !catKey)) {
+                    btn.className = 'btn btn-sm btn-primary';
+                } else {
+                    btn.className = 'btn btn-sm btn-outline';
+                }
+            }
+        });
+        if ($('prodCategoryFilter')) {
+            if (catKey === 'snacks') {
+                const cat = state.categories.find(c => (c.name || '').toLowerCase().includes('snack'));
+                $('prodCategoryFilter').value = cat ? cat.id : '';
+            } else if (catKey === 'talleres') {
+                const cat = state.categories.find(c => (c.name || '').toLowerCase().includes('taller'));
+                $('prodCategoryFilter').value = cat ? cat.id : '';
+            } else {
+                $('prodCategoryFilter').value = '';
+            }
+        }
+        renderProducts();
     };
 
     function renderProducts() {
@@ -3397,7 +4063,18 @@
 
         const rows = state.products.filter(p => {
             const matchesSearch = (p.name || '').toLowerCase().includes(search);
-            const matchesCategory = !catId || p.categoryId === catId;
+            
+            let matchesCategory = true;
+            if (currentInvCategory === 'snacks') {
+                const snackCatIds = state.categories.filter(c => (c.name || '').toLowerCase().includes('snack')).map(c => c.id);
+                matchesCategory = snackCatIds.includes(p.categoryId) || (p.name || '').toLowerCase().includes('snack');
+            } else if (currentInvCategory === 'talleres') {
+                const tallerCatIds = state.categories.filter(c => (c.name || '').toLowerCase().includes('taller')).map(c => c.id);
+                matchesCategory = tallerCatIds.includes(p.categoryId) || (p.name || '').toLowerCase().includes('taller');
+            } else if (catId) {
+                matchesCategory = p.categoryId === catId;
+            }
+
             let matchesStock = true;
             if (stockFilter === 'low') {
                 matchesStock = !p.isInfinite && p.stock <= 8;
@@ -3590,65 +4267,177 @@
         $('spTotalVal').innerText = formatMoney(total);
     }
 
+    let currentSellCategory = ''; // '', 'snacks', 'talleres'
+
+    window.setSellCategoryFilter = catKey => {
+        currentSellCategory = catKey;
+        ['all', 'snacks', 'talleres'].forEach(k => {
+            const btn = $(`spCatBtn_${k}`);
+            if (btn) {
+                if (k === catKey || (k === 'all' && !catKey)) {
+                    btn.className = 'btn btn-sm btn-primary';
+                } else {
+                    btn.className = 'btn btn-sm btn-outline';
+                }
+            }
+        });
+        populateProductDropdowns($('spProductSearch') ? $('spProductSearch').value : '');
+    };
+
     window.openSellModal = childId => {
-        window.currentSellChildId = childId;
-        currentCart = [];
-        const child = state.children.find(c => c.id === childId);
-        if (child) {
-            $('spChildId').value = child.id;
-            $('spChildName').innerText = child.name;
-            $('spChildParent').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone}`;
-            $('spChildHeader').style.display = 'flex';
-            $('spChildSearchGroup').style.display = 'none';
-            $('spPayMethodACuenta').disabled = false;
-            $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
-        } else {
-            $('spChildId').value = '';
-            $('spChildHeader').style.display = 'none';
-            $('spChildSearchGroup').style.display = 'block';
-            populateSellChildDropdown();
-            $('spPayMethodACuenta').disabled = true;
-            $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
-            $('spPayMethod').value = 'Efectivo';
+        try {
+            window.currentSellChildId = childId;
+            currentCart = [];
+            if ($('sellProductForm')) $('sellProductForm').reset();
+            if ($('spProductSearch')) $('spProductSearch').value = '';
+            currentSellCategory = '';
+            if ($('spCatBtn_all')) $('spCatBtn_all').className = 'btn btn-sm btn-primary';
+            if ($('spCatBtn_snacks')) $('spCatBtn_snacks').className = 'btn btn-sm btn-outline';
+            if ($('spCatBtn_talleres')) $('spCatBtn_talleres').className = 'btn btn-sm btn-outline';
+            populateProductDropdowns();
+            
+            const children = state.children || [];
+            const child = childId ? children.find(c => c.id === childId) : null;
+            if (child) {
+                if ($('spChildId')) $('spChildId').value = child.id;
+                if ($('spChildName')) $('spChildName').innerText = child.name || 'Sin Nombre';
+                if ($('spChildParent')) $('spChildParent').innerText = `Tutor: ${child.parentName || '-'} · Tel: ${child.phone || '-'}`;
+                if ($('spChildHeader')) $('spChildHeader').style.display = 'flex';
+                if ($('spChildSearchGroup')) $('spChildSearchGroup').style.display = 'none';
+                if ($('spPayMethodACuenta')) {
+                    $('spPayMethodACuenta').disabled = false;
+                    $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
+                }
+            } else {
+                if ($('spChildId')) $('spChildId').value = '';
+                if ($('spChildHeader')) $('spChildHeader').style.display = 'none';
+                if ($('spChildSearchGroup')) $('spChildSearchGroup').style.display = 'block';
+                if ($('spChildSearchInput')) $('spChildSearchInput').value = '';
+                populateSellChildDropdown();
+                if ($('spPayMethodACuenta')) {
+                    $('spPayMethodACuenta').disabled = true;
+                    $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
+                }
+                if ($('spPayMethod')) $('spPayMethod').value = 'Efectivo';
+            }
+            if ($('spSplitPayment')) $('spSplitPayment').checked = false;
+            if ($('spSinglePayGroup')) $('spSinglePayGroup').style.display = 'block';
+            if ($('spSplitPayGroup')) $('spSplitPayGroup').style.display = 'none';
+            if ($('spPayMethod1')) $('spPayMethod1').value = 'Efectivo';
+            if ($('spPayMethod2')) $('spPayMethod2').value = 'Tarjeta';
+            if ($('spIsEmployeeSale')) $('spIsEmployeeSale').checked = false;
+            if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
+            if ($('spStockLabel')) $('spStockLabel').innerText = '-';
+            if ($('spPriceVal')) $('spPriceVal').value = '';
+            renderCart();
+            if ($('sellProductModal')) $('sellProductModal').style.display = 'flex';
+        } catch (err) {
+            console.error("Error abriendo modal de venta:", err);
+            showToast("Error al abrir venta: " + err.message, "error");
         }
-        $('sellProductForm').reset();
-        if ($('spIsEmployeeSale')) $('spIsEmployeeSale').checked = false;
-        if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
-        $('spStockLabel').innerText = '-';
-        $('spPriceVal').value = '';
-        renderCart();
-        $('sellProductModal').style.display = 'flex';
     };
 
     window.openQuickSellModal = () => {
         window.openSellModal(null);
     };
 
-    window.closeSellProductModal = () => $('sellProductModal').style.display = 'none';
-
-    function populateSellChildDropdown() {
-        const options = state.children.map(c => `<option value="${c.id}">${c.name} (${c.parentName})</option>`).join('');
-        $('spChildSelect').innerHTML = `<option value="">-- Venta de Mostrador (Sin Niño) --</option>` + options;
-    }
-
-    $('spChildSelect').onchange = () => {
-        const val = $('spChildSelect').value;
-        if (val) {
-            $('spPayMethodACuenta').disabled = false;
-            $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
-        } else {
-            $('spPayMethodACuenta').disabled = true;
-            $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
-            if ($('spPayMethod').value === 'A Cuenta') {
-                $('spPayMethod').value = 'Efectivo';
-            }
-        }
+    window.closeSellProductModal = () => {
+        if ($('sellProductModal')) $('sellProductModal').style.display = 'none';
     };
 
-    function populateProductDropdowns() {
-        const options = state.products.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.price)}) - Stock: ${p.stock}</option>`).join('');
-        $('spProductSelect').innerHTML = `<option value="">-- Seleccionar Producto --</option>` + options;
+    function populateSellChildDropdown(filterText = '') {
+        const q = (filterText || '').trim().toLowerCase();
+        const children = state.children || [];
+        const filtered = q
+            ? children.filter(c => (c.name || '').toLowerCase().includes(q) || (c.parentName || '').toLowerCase().includes(q) || (c.phone || '').includes(q))
+            : children;
+
+        const options = filtered.map(c => `<option value="${c.id}">${c.name || 'Sin nombre'} (${c.parentName || '-'})</option>`).join('');
+        if ($('spChildSelect')) {
+            $('spChildSelect').innerHTML = `<option value="">-- ${filtered.length === 0 ? 'Sin coincidencias' : 'Venta de Mostrador (Sin Niño)'} --</option>` + options;
+        }
+
+        if (filtered.length === 1 && q && $('spChildSelect')) {
+            $('spChildSelect').value = filtered[0].id;
+            if ($('spChildSelect').onchange) $('spChildSelect').onchange();
+        }
     }
+
+    window.onSpChildSearchInput = () => {
+        const q = $('spChildSearchInput') ? $('spChildSearchInput').value : '';
+        populateSellChildDropdown(q);
+    };
+
+    if ($('spChildSelect')) {
+        $('spChildSelect').onchange = () => {
+            const val = $('spChildSelect') ? $('spChildSelect').value : '';
+            if (val) {
+                if ($('spPayMethodACuenta')) {
+                    $('spPayMethodACuenta').disabled = false;
+                    $('spPayMethodACuenta').innerText = "Cobrar a la cuenta del niño (Deuda)";
+                }
+            } else {
+                if ($('spPayMethodACuenta')) {
+                    $('spPayMethodACuenta').disabled = true;
+                    $('spPayMethodACuenta').innerText = "Cobrar a cuenta (Selecciona un niño)";
+                }
+                if ($('spPayMethod') && $('spPayMethod').value === 'A Cuenta') {
+                    $('spPayMethod').value = 'Efectivo';
+                }
+            }
+        };
+    }
+
+    function populateProductDropdowns(filterText = '') {
+        const q = (filterText || '').trim().toLowerCase();
+        const products = state.products || [];
+        const categories = state.categories || [];
+        
+        let filtered = products;
+
+        if (currentSellCategory === 'snacks') {
+            const snackCatIds = categories.filter(c => (c.name || '').toLowerCase().includes('snack')).map(c => c.id);
+            filtered = filtered.filter(p => snackCatIds.includes(p.categoryId) || (p.name || '').toLowerCase().includes('snack'));
+        } else if (currentSellCategory === 'talleres') {
+            const tallerCatIds = categories.filter(c => (c.name || '').toLowerCase().includes('taller')).map(c => c.id);
+            filtered = filtered.filter(p => tallerCatIds.includes(p.categoryId) || (p.name || '').toLowerCase().includes('taller'));
+        }
+
+        if (q) {
+            filtered = filtered.filter(p => {
+                const cat = categories.find(c => c.id === p.categoryId) || { name: '' };
+                return (p.name || '').toLowerCase().includes(q) || (cat.name || '').toLowerCase().includes(q);
+            });
+        }
+
+        const options = filtered.map(p => {
+            const cat = categories.find(c => c.id === p.categoryId);
+            const catBadge = cat ? `[${cat.name}] ` : '';
+            return `<option value="${p.id}">${catBadge}${p.name || 'Sin nombre'} (${formatMoney(p.price)}) - Stock: ${p.isInfinite ? '∞' : (p.stock || 0)}</option>`;
+        }).join('');
+
+        let label = 'Seleccionar Artículo';
+        if (currentSellCategory === 'talleres') label = 'Seleccionar Taller';
+        if (currentSellCategory === 'snacks') label = 'Seleccionar Snack';
+
+        if ($('spProductSelect')) {
+            $('spProductSelect').innerHTML = `<option value="">-- ${filtered.length === 0 ? 'No se encontraron artículos' : label} (${filtered.length}) --</option>` + options;
+        }
+        if ($('spProductCountBadge')) {
+            $('spProductCountBadge').innerText = `${filtered.length} disponible(s)`;
+        }
+
+        if (filtered.length === 1 && q && $('spProductSelect')) {
+            $('spProductSelect').value = filtered[0].id;
+            onSellProductChange();
+        }
+    }
+
+    window.onSpProductSearchInput = () => {
+        const q = $('spProductSearch') ? $('spProductSearch').value : '';
+        populateProductDropdowns(q);
+        onSellProductChange();
+    };
 
     window.onSellProductChange = () => {
         const prodId = $('spProductSelect').value;
@@ -3673,15 +4462,67 @@
     };
 
     window.updateSpTotal = () => {
+        let total = 0;
         if (currentCart.length === 0) {
             const price = parseFloat($('spPriceVal').value) || 0;
             const qty = parseInt($('spQuantity').value) || 0;
-            $('spTotalVal').innerText = formatMoney(price * qty);
+            total = price * qty;
         } else {
-            const cartSum = currentCart.reduce((acc, i) => acc + i.subtotal, 0);
-            $('spTotalVal').innerText = formatMoney(cartSum);
+            total = currentCart.reduce((acc, i) => acc + i.subtotal, 0);
+        }
+        $('spTotalVal').innerText = formatMoney(total);
+        if ($('spSplitPayment') && $('spSplitPayment').checked) {
+            onSellSplitAmount1Change();
         }
     };
+
+    window.toggleSellProductSplitPayment = () => {
+        const isSplit = $('spSplitPayment') && $('spSplitPayment').checked;
+        if ($('spSinglePayGroup')) $('spSinglePayGroup').style.display = isSplit ? 'none' : 'block';
+        if ($('spSplitPayGroup')) $('spSplitPayGroup').style.display = isSplit ? 'block' : 'none';
+        if (isSplit) {
+            const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
+            const half = Math.round((grandTotal / 2) * 100) / 100;
+            if (!$('spPayAmount1').value || parseFloat($('spPayAmount1').value) === 0) {
+                $('spPayAmount1').value = half > 0 ? half.toFixed(2) : '';
+                $('spPayAmount2').value = (grandTotal - half) > 0 ? (grandTotal - half).toFixed(2) : '';
+            }
+            updateSellSplitSummary();
+        }
+    };
+
+    window.onSellSplitAmount1Change = () => {
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
+        const a1 = Math.max(0, parseFloat($('spPayAmount1').value) || 0);
+        const remainder = Math.max(0, Math.round((grandTotal - a1) * 100) / 100);
+        $('spPayAmount2').value = remainder > 0 ? remainder.toFixed(2) : '0.00';
+        updateSellSplitSummary();
+    };
+
+    window.onSellSplitAmount2Change = () => {
+        updateSellSplitSummary();
+    };
+
+    function updateSellSplitSummary() {
+        if (!$('spSplitSumText') || !$('spSplitDiffText')) return;
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
+        const a1 = Math.max(0, parseFloat($('spPayAmount1').value) || 0);
+        const a2 = Math.max(0, parseFloat($('spPayAmount2').value) || 0);
+        const sum = Math.round((a1 + a2) * 100) / 100;
+        const diff = Math.round((grandTotal - sum) * 100) / 100;
+
+        $('spSplitSumText').innerText = `Suma: ${formatMoney(sum)}`;
+        if (Math.abs(diff) < 0.01) {
+            $('spSplitDiffText').innerText = '✓ Cubierto 100%';
+            $('spSplitDiffText').style.color = 'var(--success)';
+        } else if (diff > 0) {
+            $('spSplitDiffText').innerText = `Faltan: ${formatMoney(diff)}`;
+            $('spSplitDiffText').style.color = 'var(--danger)';
+        } else {
+            $('spSplitDiffText').innerText = `Excedente: ${formatMoney(Math.abs(diff))}`;
+            $('spSplitDiffText').style.color = 'var(--warning)';
+        }
+    }
 
     $('sellProductForm').onsubmit = async e => {
         e.preventDefault();
@@ -3698,16 +4539,53 @@
 
         const childId = $('spChildId').value || $('spChildSelect').value;
         const child = childId ? state.children.find(c => c.id === childId) : null;
-        const payMethod = $('spPayMethod').value;
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
 
-        if (payMethod === 'A Cuenta' && !child) {
-            return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
+        const isSplit = $('spSplitPayment') && $('spSplitPayment').checked && grandTotal > 0;
+        let payMethod = '';
+        let splits = [];
+        let pendingDebtToAdd = 0;
+
+        if (isSplit) {
+            const m1 = $('spPayMethod1').value;
+            const a1 = Math.max(0, parseFloat($('spPayAmount1').value) || 0);
+            const m2 = $('spPayMethod2').value;
+            const a2 = Math.max(0, parseFloat($('spPayAmount2').value) || 0);
+
+            if (a1 < 0 || a2 < 0) return showToast('Los montos del pago dividido no pueden ser negativos', 'error');
+            if (Math.abs((a1 + a2) - grandTotal) > 0.05) {
+                return showToast(`La suma de los montos ($${(a1 + a2).toFixed(2)}) debe coincidir con el total de la venta ($${grandTotal.toFixed(2)})`, 'error');
+            }
+
+            if ((m1 === 'A Cuenta' || m2 === 'A Cuenta') && !child) {
+                return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
+            }
+
+            splits = [
+                { method: m1, amount: a1 },
+                { method: m2, amount: a2 }
+            ].filter(sp => sp.amount > 0);
+
+            payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
+
+            splits.forEach(sp => {
+                if (sp.method === 'A Cuenta' || sp.method === 'Pendiente') {
+                    pendingDebtToAdd += sp.amount;
+                }
+            });
+        } else {
+            payMethod = $('spPayMethod').value;
+            if (payMethod === 'A Cuenta' && !child) {
+                return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
+            }
+            splits = grandTotal > 0 ? [{ method: payMethod, amount: grandTotal }] : [];
+            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
+                pendingDebtToAdd = grandTotal;
+            }
         }
 
         const now = new Date();
         const cartId = 'CART-' + Date.now();
-        const grandTotal = currentCart.reduce((sum, item) => sum + item.subtotal, 0);
-        const isPending = (payMethod === 'A Cuenta' || payMethod === 'Pendiente');
 
         if ($('btnSubmitSellForm')) $('btnSubmitSellForm').disabled = true;
 
@@ -3715,6 +4593,17 @@
             for (const item of currentCart) {
                 const p = state.products.find(x => x.id === item.productId);
                 const totalCost = item.qty * (item.cost || 0);
+
+                let itemSplits = [];
+                if (isSplit && grandTotal > 0) {
+                    const ratio = item.subtotal / grandTotal;
+                    itemSplits = splits.map(sp => ({
+                        method: sp.method,
+                        amount: Math.round(sp.amount * ratio * 100) / 100
+                    }));
+                } else if (!item.isCourtesy && payMethod) {
+                    itemSplits = [{ method: payMethod, amount: item.subtotal }];
+                }
 
                 const saleData = {
                     childId: child ? child.id : '',
@@ -3726,9 +4615,10 @@
                     cost: totalCost,
                     amount: item.subtotal,
                     date: now.toISOString(),
-                    status: isPending ? 'pending' : 'paid',
+                    status: (pendingDebtToAdd > 0) ? (pendingDebtToAdd === grandTotal ? 'pending' : 'partial') : 'paid',
                     paymentMethod: item.isCourtesy ? 'Cortesía' : payMethod,
-                    paymentDate: isPending ? null : now.toISOString(),
+                    splits: itemSplits,
+                    paymentDate: (pendingDebtToAdd === grandTotal) ? null : now.toISOString(),
                     cartId: cartId
                 };
 
@@ -3741,8 +4631,8 @@
                 }
             }
 
-            if (isPending && child && grandTotal > 0) {
-                const newDebt = (child.debt || 0) + grandTotal;
+            if (pendingDebtToAdd > 0 && child) {
+                const newDebt = (child.debt || 0) + pendingDebtToAdd;
                 const newDebtSince = child.debtSince ? child.debtSince : now.toISOString();
                 await updateDoc(doc(db, "kids", child.id), {
                     debt: newDebt,
@@ -3899,7 +4789,7 @@
         renderChildHistoryTable();
     }
 
-    function renderChildHistoryTable() {
+    window.renderChildHistoryTable = () => {
         const { timeline } = getChildTimelineData(currentHistoryChildId);
         const searchQ = ($('chSearchInput') ? $('chSearchInput').value : '').toLowerCase();
 
@@ -4080,12 +4970,79 @@
         `).join('');
     }
 
-    function populatePlanDropdowns() {
-        const options = state.plans.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.cost)})</option>`).join('');
-        $('apPlanSelect').innerHTML = `<option value="">-- Seleccionar Plan --</option>` + options;
+    function populatePlanDropdowns(filterText = '') {
+        const q = (filterText || '').trim().toLowerCase();
+        const filtered = q
+            ? state.plans.filter(p => (p.name || '').toLowerCase().includes(q))
+            : state.plans;
+
+        const options = filtered.map(p => `<option value="${p.id}">${p.name} (${formatMoney(p.cost)}) - ${p.totalHours}h / ${p.duration}d</option>`).join('');
+        $('apPlanSelect').innerHTML = `<option value="">-- ${filtered.length === 0 ? 'No se encontraron planes' : 'Seleccionar Plan'} (${filtered.length}) --</option>` + options;
+        if ($('apPlanCountBadge')) {
+            $('apPlanCountBadge').innerText = `${filtered.length} disponible(s)`;
+        }
+
+        if (filtered.length === 1 && q) {
+            $('apPlanSelect').value = filtered[0].id;
+            onPlanSelectChange();
+        }
     }
 
+    window.onApPlanSearchInput = () => {
+        const q = $('apPlanSearch') ? $('apPlanSearch').value : '';
+        populatePlanDropdowns(q);
+        onPlanSelectChange();
+    };
+
     // --- ASSIGN PLAN TO CHILD ---
+    window.toggleAssignPlanSplitPayment = () => {
+        const isSplit = $('apSplitPayment') && $('apSplitPayment').checked;
+        if ($('apSinglePayGroup')) $('apSinglePayGroup').style.display = isSplit ? 'none' : 'block';
+        if ($('apSplitPayGroup')) $('apSplitPayGroup').style.display = isSplit ? 'block' : 'none';
+        if (isSplit) {
+            const cost = Math.max(0, parseFloat($('apCost').value) || 0);
+            const half = Math.round((cost / 2) * 100) / 100;
+            if (!$('apPayAmount1').value || parseFloat($('apPayAmount1').value) === 0) {
+                $('apPayAmount1').value = half > 0 ? half.toFixed(2) : '';
+                $('apPayAmount2').value = (cost - half) > 0 ? (cost - half).toFixed(2) : '';
+            }
+            updateApSplitSummary();
+        }
+    };
+
+    window.onApSplitAmount1Change = () => {
+        const cost = Math.max(0, parseFloat($('apCost').value) || 0);
+        const a1 = Math.max(0, parseFloat($('apPayAmount1').value) || 0);
+        const remainder = Math.max(0, Math.round((cost - a1) * 100) / 100);
+        $('apPayAmount2').value = remainder > 0 ? remainder.toFixed(2) : '0.00';
+        updateApSplitSummary();
+    };
+
+    window.onApSplitAmount2Change = () => {
+        updateApSplitSummary();
+    };
+
+    function updateApSplitSummary() {
+        if (!$('apSplitSumText') || !$('apSplitDiffText')) return;
+        const cost = Math.max(0, parseFloat($('apCost').value) || 0);
+        const a1 = Math.max(0, parseFloat($('apPayAmount1').value) || 0);
+        const a2 = Math.max(0, parseFloat($('apPayAmount2').value) || 0);
+        const sum = Math.round((a1 + a2) * 100) / 100;
+        const diff = Math.round((cost - sum) * 100) / 100;
+
+        $('apSplitSumText').innerText = `Suma: ${formatMoney(sum)}`;
+        if (Math.abs(diff) < 0.01) {
+            $('apSplitDiffText').innerText = '✓ Cubierto 100%';
+            $('apSplitDiffText').style.color = 'var(--success)';
+        } else if (diff > 0) {
+            $('apSplitDiffText').innerText = `Faltan: ${formatMoney(diff)}`;
+            $('apSplitDiffText').style.color = 'var(--danger)';
+        } else {
+            $('apSplitDiffText').innerText = `Excedente: ${formatMoney(Math.abs(diff))}`;
+            $('apSplitDiffText').style.color = 'var(--warning)';
+        }
+    }
+
     window.openAssignPlanModal = childId => {
         const child = state.children.find(c => c.id === childId);
         if (!child) return;
@@ -4093,6 +5050,13 @@
         $('apChildName').innerText = child.name;
         $('apChildParent').innerText = `Tutor: ${child.parentName} · Tel: ${child.phone}`;
         $('assignPlanForm').reset();
+        if ($('apPlanSearch')) $('apPlanSearch').value = '';
+        populatePlanDropdowns();
+        if ($('apSplitPayment')) $('apSplitPayment').checked = false;
+        if ($('apSinglePayGroup')) $('apSinglePayGroup').style.display = 'block';
+        if ($('apSplitPayGroup')) $('apSplitPayGroup').style.display = 'none';
+        if ($('apPayMethod1')) $('apPayMethod1').value = 'Efectivo';
+        if ($('apPayMethod2')) $('apPayMethod2').value = 'Transferencia';
         if ($('apIncludeInIncome')) $('apIncludeInIncome').checked = true;
         
         const today = new Date().toISOString().split('T')[0];
@@ -4112,6 +5076,9 @@
             $('apTotalHours').value = p.totalHours;
             $('apHoursPerDay').value = p.hoursPerDay;
             updateApExpirationDate();
+            if ($('apSplitPayment') && $('apSplitPayment').checked) {
+                onApSplitAmount1Change();
+            }
         } else {
             $('apCost').value = '';
             $('apDuration').value = '';
@@ -4145,8 +5112,43 @@
         const expirationDate = $('apEndDate').value;
         const totalHours = parseFloat($('apTotalHours').value);
         const hoursPerDay = parseFloat($('apHoursPerDay').value);
-        const payMethod = $('apPayMethod').value;
         const includeInIncome = $('apIncludeInIncome') ? $('apIncludeInIncome').checked : true;
+
+        const isSplit = $('apSplitPayment') && $('apSplitPayment').checked && cost > 0;
+        let payMethod = '';
+        let splits = [];
+        let pendingDebtToAdd = 0;
+
+        if (isSplit) {
+            const m1 = $('apPayMethod1').value;
+            const a1 = Math.max(0, parseFloat($('apPayAmount1').value) || 0);
+            const m2 = $('apPayMethod2').value;
+            const a2 = Math.max(0, parseFloat($('apPayAmount2').value) || 0);
+
+            if (a1 < 0 || a2 < 0) return showToast('Los montos del pago dividido no pueden ser negativos', 'error');
+            if (Math.abs((a1 + a2) - cost) > 0.05) {
+                return showToast(`La suma de los montos ($${(a1 + a2).toFixed(2)}) debe coincidir con el costo del plan ($${cost.toFixed(2)})`, 'error');
+            }
+
+            splits = [
+                { method: m1, amount: a1 },
+                { method: m2, amount: a2 }
+            ].filter(sp => sp.amount > 0);
+
+            payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
+
+            splits.forEach(sp => {
+                if (sp.method === 'A Cuenta' || sp.method === 'Pendiente') {
+                    pendingDebtToAdd += sp.amount;
+                }
+            });
+        } else {
+            payMethod = $('apPayMethod').value;
+            splits = cost > 0 ? [{ method: payMethod, amount: cost }] : [];
+            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
+                pendingDebtToAdd = cost;
+            }
+        }
 
         const now = new Date();
 
@@ -4161,9 +5163,10 @@
                 cost: 0,
                 amount: cost,
                 date: now.toISOString(),
-                status: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? 'pending' : 'paid',
+                status: (pendingDebtToAdd > 0) ? (pendingDebtToAdd === cost ? 'pending' : 'partial') : 'paid',
                 paymentMethod: payMethod,
-                paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString(),
+                splits: splits,
+                paymentDate: (pendingDebtToAdd === cost) ? null : now.toISOString(),
                 includeInIncome: includeInIncome
             };
 
@@ -4181,14 +5184,14 @@
                 hoursPerDay,
                 startDate,
                 expirationDate,
-                paymentDate: (payMethod === 'A Cuenta' || payMethod === 'Pendiente') ? null : now.toISOString(),
+                paymentDate: (pendingDebtToAdd === cost) ? null : now.toISOString(),
                 cost,
                 includeInIncome
             });
 
             const updates = { activePlans, activePlan: null };
-            if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
-                updates.debt = (child.debt || 0) + cost;
+            if (pendingDebtToAdd > 0) {
+                updates.debt = (child.debt || 0) + pendingDebtToAdd;
                 updates.debtSince = child.debtSince ? child.debtSince : now.toISOString();
             }
 
@@ -4707,3 +5710,4 @@
 </script>
 </body>
 </html>
+
