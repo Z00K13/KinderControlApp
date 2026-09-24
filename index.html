@@ -545,6 +545,7 @@
         <button class="nav-btn" data-tab="kids-tab"><i class="fas fa-users"></i> Niños</button>
         <button class="nav-btn" data-tab="inventory-tab" data-secure="true"><i class="fas fa-boxes"></i> Inventario</button>
         <button class="nav-btn" data-tab="plans-tab" data-secure="true"><i class="fas fa-file-invoice-dollar"></i> Planes</button>
+        <button class="nav-btn" data-tab="sales-tab"><i class="fas fa-receipt"></i> Ventas</button>
         <button class="nav-btn" data-tab="history-tab"><i class="fas fa-history"></i> Historial</button>
         <button class="nav-btn" data-tab="cash-tab" data-secure="true"><i class="fas fa-chart-line"></i> Corte</button>
         <button class="nav-btn" data-tab="settings-tab" data-secure="true"><i class="fas fa-cog"></i> Config</button>
@@ -577,9 +578,14 @@
                                     <div id="selectedChildParent" style="font-size: 0.9rem; color: var(--text-muted);">-</div>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAccount" onclick="openAccountModal($('selectedChildId') ? $('selectedChildId').value : null)">
-                                <i class="fas fa-wallet" style="color:var(--primary);"></i> Estado de Cuenta
-                            </button>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAssignPlan" style="color:#4338ca; border-color:#c7d2fe; background:#f5f3ff;" onclick="openAssignPlanModalFromCheckin()">
+                                    <i class="fas fa-file-invoice-dollar"></i> + Comprar / Asignar Plan
+                                </button>
+                                <button type="button" class="btn btn-outline btn-sm" id="btnCheckinAccount" onclick="openAccountModal($('selectedChildId') ? $('selectedChildId').value : null)">
+                                    <i class="fas fa-wallet" style="color:var(--primary);"></i> Estado de Cuenta
+                                </button>
+                            </div>
                             <input type="hidden" id="selectedChildId">
                         </div>
 
@@ -689,10 +695,10 @@
                                 <i class="fas fa-border-all"></i> Todos
                             </button>
                             <button type="button" class="btn btn-sm btn-outline" id="invCatBtn_snacks" onclick="setInvCategoryFilter('snacks')" style="font-size:0.85rem; padding:6px 14px; border-radius:20px;">
-                                🍿 Snacks
+                                <i class="fas fa-cookie-bite"></i> Snacks
                             </button>
                             <button type="button" class="btn btn-sm btn-outline" id="invCatBtn_talleres" onclick="setInvCategoryFilter('talleres')" style="font-size:0.85rem; padding:6px 14px; border-radius:20px;">
-                                🎨 Talleres
+                                <i class="fas fa-palette"></i> Talleres
                             </button>
                         </div>
                         <div class="filters-bar" style="margin-bottom:15px; align-items:center;">
@@ -710,7 +716,7 @@
                                 <label>Filtrar Stock</label>
                                 <select id="prodStockFilter">
                                     <option value="">Todos los productos</option>
-                                    <option value="low">⚠️ Solo Stock Bajo (≤ 8 u.)</option>
+                                    <option value="low">Solo Stock Bajo (≤ 8 u.)</option>
                                     <option value="normal">Stock Normal (> 8 u.)</option>
                                 </select>
                             </div>
@@ -733,53 +739,17 @@
                     </div>
                 </div>
 
-                <!-- Venta Rápida y Reportes -->
+                <!-- Reportes de Inventario -->
                 <div style="display:flex; flex-direction:column; gap:20px;">
                     <div class="card">
-                        <div class="card-header"><h2><i class="fas fa-shopping-cart"></i> Venta Rápida</h2></div>
-                        <div class="card-body">
-                            <button class="btn btn-primary" onclick="openQuickSellModal()" style="width:100%;"><i class="fas fa-cart-plus"></i> Registrar Nueva Venta</button>
-                        </div>
-                    </div>
-
-                    <div class="card">
                         <div class="card-header"><h2><i class="fas fa-clipboard-list"></i> Reportes de Inventario</h2></div>
-                        <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
-                            <button class="btn btn-outline" onclick="generateInventoryPdf('all')" style="width:100%;"><i class="fas fa-file-pdf" style="color:var(--primary);"></i> PDF Inventario Completo</button>
-                            <button class="btn btn-warning" onclick="generateInventoryPdf('low')" style="width:100%; font-weight:700;"><i class="fas fa-exclamation-triangle"></i> PDF Stock Bajo (≤ 8 un.)</button>
+                        <div class="card-body" style="display:flex; flex-direction:column; gap:12px;">
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Genera reportes y listados completos del catálogo de artículos, costos, precios y existencias en almacén.</p>
+                            <button class="btn btn-outline" onclick="generateInventoryPdf('all')" style="width:100%;"><i class="fas fa-file-pdf" style="color:var(--primary);"></i> Descargar PDF Inventario Completo</button>
+                            <button class="btn btn-warning" onclick="generateInventoryPdf('low')" style="width:100%; font-weight:700;"><i class="fas fa-exclamation-triangle"></i> Descargar PDF Stock Bajo (≤ 8 un.)</button>
                             <div style="display:flex; gap:8px; margin-top:5px;">
                                 <button class="btn btn-secondary btn-sm" onclick="exportInventoryExcel('all')" style="flex:1;"><i class="fas fa-file-excel" style="color:var(--success);"></i> Excel Todo</button>
                                 <button class="btn btn-secondary btn-sm" onclick="exportInventoryExcel('low')" style="flex:1;"><i class="fas fa-file-excel" style="color:var(--warning);"></i> Excel Stock Bajo</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header"><h2><i class="fas fa-file-invoice"></i> Reporte de Ventas</h2></div>
-                        <div class="card-body">
-                            <div class="form-group" style="margin-bottom:10px;">
-                                <label>Desde</label>
-                                <input type="date" id="salesFrom">
-                            </div>
-                            <div class="form-group" style="margin-bottom:15px;">
-                                <label>Hasta</label>
-                                <input type="date" id="salesTo">
-                            </div>
-                            <button class="btn btn-outline" onclick="generateSalesReportPdf()" style="width:100%; margin-bottom:10px;"><i class="fas fa-file-pdf" style="color:var(--danger);"></i> Descargar PDF de Ventas</button>
-                            <button class="btn btn-danger" onclick="clearSalesHistory()" style="width:100%; margin-bottom:10px;"><i class="fas fa-trash"></i> Eliminar Historial de Ventas</button>
-                            <div style="border-top:1px solid var(--border); padding-top:15px; margin-top:15px;">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                    <span>Ventas Totales:</span>
-                                    <strong id="repTotalSales">$0.00</strong>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                                    <span>Costo Adquisición:</span>
-                                    <strong id="repTotalCost">$0.00</strong>
-                                </div>
-                                <div style="display:flex; justify-content:space-between; color:var(--success); font-weight:800;">
-                                    <span>Ganancia Neta:</span>
-                                    <strong id="repNetProfit">$0.00</strong>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -840,6 +810,139 @@
             </div>
         </div>
 
+        <!-- VENTAS Y GESTIÓN -->
+        <div id="sales-tab" class="tab-pane">
+            <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin-bottom: 25px;">
+                <!-- Venta Rápida y Resumen Financiero -->
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-shopping-cart"></i> Venta Rápida</h2></div>
+                        <div class="card-body">
+                            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">Registra ventas directas de snacks, bebidas, talleres, tiendita o planes a niños registrados o clientes libres.</p>
+                            <button class="btn btn-primary" onclick="openQuickSellModal()" style="width:100%; padding:12px; font-weight:700; font-size:0.95rem;"><i class="fas fa-cart-plus"></i> Registrar Nueva Venta</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h2><i class="fas fa-calculator"></i> Resumen de Ventas</h2></div>
+                        <div class="card-body">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:1rem;">
+                                <span>Ventas Totales:</span>
+                                <strong id="repTotalSales" style="font-size:1.2rem; color:var(--primary);">$0.00</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem;">
+                                <span>Costo Adquisición:</span>
+                                <strong id="repTotalCost">$0.00</strong>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; color:var(--success); font-weight:800; font-size:1.05rem; border-top:1px dashed var(--border); padding-top:10px;">
+                                <span>Ganancia Neta:</span>
+                                <strong id="repNetProfit">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reporte y Filtros de Ventas -->
+                <div class="card">
+                    <div class="card-header"><h2><i class="fas fa-file-invoice"></i> Reporte y Desglose de Ventas</h2></div>
+                    <div class="card-body">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Desde</label>
+                                <input type="date" id="salesFrom" onchange="renderSalesReport()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Hasta</label>
+                                <input type="date" id="salesTo" onchange="renderSalesReport()">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label>Filtrar por Categoría</label>
+                            <select id="salesCategoryFilter" onchange="renderSalesReport()">
+                                <option value="">-- Todas las Categorías --</option>
+                                <option value="PLAN">Planes / Paquetes</option>
+                                <option value="SNACK">Snacks / Cafetería</option>
+                                <option value="TALLER">Talleres / Actividades</option>
+                                <option value="PRODUCTO">Tiendita / Productos</option>
+                            </select>
+                        </div>
+
+                        <!-- Desglose por Categoría en Vivo -->
+                        <div style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:14px;">
+                            <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">
+                                <i class="fas fa-chart-pie"></i> Desglose por Concepto
+                            </div>
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
+                                    <span>Planes:</span>
+                                    <strong id="repPlansTotal" style="color:#4338ca;">$0.00</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
+                                    <span>Snacks:</span>
+                                    <strong id="repSnacksTotal" style="color:#d97706;">$0.00</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
+                                    <span>Talleres:</span>
+                                    <strong id="repTalleresTotal" style="color:#059669;">$0.00</strong>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid var(--border);">
+                                    <span>Productos:</span>
+                                    <strong id="repProductsTotal" style="color:#2563eb;">$0.00</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="btn btn-primary" onclick="generateSalesReportPdf()" style="flex:1;"><i class="fas fa-file-pdf"></i> PDF Desglosado</button>
+                            <button class="btn btn-outline" onclick="exportSalesReportExcel()" style="flex:1;"><i class="fas fa-file-excel" style="color:var(--success);"></i> Excel Desglosado</button>
+                            <button class="btn btn-danger btn-sm" onclick="clearSalesHistory()" style="width:100%; margin-top:2px;"><i class="fas fa-trash"></i> Eliminar Historial de Ventas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA Y GESTIÓN DE TODAS LAS VENTAS -->
+            <div class="card">
+                <div class="card-header" style="flex-wrap:wrap; gap:10px;">
+                    <h2><i class="fas fa-receipt"></i> Registro y Gestión de Ventas</h2>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <div style="position:relative; min-width:240px;">
+                            <input type="text" id="salesTableSearch" placeholder="Buscar por niño, concepto o método..." oninput="renderSalesTable()" style="padding-left:34px; width:100%;">
+                            <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                        </div>
+                        <select id="salesTableCatFilter" onchange="renderSalesTable()" style="padding:6px 12px; font-size:0.85rem;">
+                            <option value="">Todas las Categorías</option>
+                            <option value="PLAN">Planes</option>
+                            <option value="SNACK">Snacks</option>
+                            <option value="TALLER">Talleres</option>
+                            <option value="PRODUCTO">Productos</option>
+                        </select>
+                        <span class="badge" style="background:#f1f5f9; color:var(--text-main); font-weight:700; padding:6px 10px; border-radius:8px;" id="salesTableCountBadge">0 ventas</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Niño / Cliente</th>
+                                    <th>Categoría</th>
+                                    <th>Concepto</th>
+                                    <th>Cant.</th>
+                                    <th>Total</th>
+                                    <th>Método</th>
+                                    <th>Estado</th>
+                                    <th style="text-align:center;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesManagementTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- HISTORIAL -->
         <div id="history-tab" class="tab-pane">
             <div class="card">
@@ -880,6 +983,7 @@
                                     <th>Método</th>
                                     <th>Recogió</th>
                                     <th>Obs.</th>
+                                    <th style="text-align:center;">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody"></tbody>
@@ -1161,7 +1265,12 @@
                     <span>Monto / Total a cobrar ($) *</span>
                     <span id="coCalculatedBadge" style="font-size:0.8rem; color:var(--text-muted); font-weight:600;">Sugerido: $0.00</span>
                 </label>
-                <input type="number" id="coTotalInput" step="any" min="0" style="font-size:1.4rem; font-weight:800; color:var(--primary); padding:10px 14px;" required oninput="onCheckoutTotalChange()">
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="number" id="coTotalInput" step="any" min="0" readonly style="flex:1; font-size:1.4rem; font-weight:800; color:var(--primary); padding:10px 14px; background:#f8fafc;" required oninput="onCheckoutTotalChange()">
+                    <button type="button" id="btnUnlockCoTotal" class="btn btn-outline btn-sm" onclick="unlockCheckoutTotal()" title="Editar monto" style="white-space:nowrap; padding:10px 14px; height:48px;">
+                        <i class="fas fa-lock" id="iconLockCoTotal"></i>
+                    </button>
+                </div>
                 <small class="hint" id="coExtraNote" style="color:var(--danger);font-weight:600;"></small>
             </div>
             <div class="form-group" id="coPayMethodGroup" style="margin-bottom: 15px; display: none;">
@@ -1237,6 +1346,103 @@
     </div>
 </div>
 
+<!-- MODAL: EXTENDER TIEMPO -->
+<div id="extendModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-clock-rotate-left"></i> Extender Tiempo</h2>
+            <button onclick="closeExtendModal()">×</button>
+        </div>
+        <form id="extendForm">
+            <input type="hidden" id="extSessionId">
+            <div class="modal-body">
+                <!-- Información del Niño y Estado Actual -->
+                <div style="background: #f1f5f9; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="logo-icon" style="background: var(--primary); width:38px; height:38px; font-size:1.1rem;"><i class="fas fa-child"></i></div>
+                        <div>
+                            <div id="extChildName" style="font-weight: 800; font-size: 1.1rem; color: var(--text-main);">-</div>
+                            <div id="extCurrentLimit" style="font-size: 0.85rem; color: var(--text-muted);">Salida actual: -</div>
+                        </div>
+                    </div>
+                    <span id="extSessionTypeBadge" class="kid-status-badge" style="background:#e0e7ff; color:#3730a3; font-size:0.75rem;">-</span>
+                </div>
+
+                <!-- Horas a Extender con Botones Rápidos -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="font-weight: 700; display:flex; justify-content:space-between; align-items:center;">
+                        <span>Horas a agregar al cronómetro *</span>
+                        <span id="extNewLimitPreview" style="font-size:0.8rem; font-weight:700; color:var(--primary);">Nueva salida: --:--</span>
+                    </label>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <button type="button" class="btn btn-sm btn-outline" style="flex:1; font-weight:700; border-radius:8px;" onclick="setQuickExtHours(1)">+1 Hora</button>
+                        <button type="button" class="btn btn-sm btn-outline" style="flex:1; font-weight:700; border-radius:8px;" onclick="setQuickExtHours(2)">+2 Horas</button>
+                        <button type="button" class="btn btn-sm btn-outline" style="flex:1; font-weight:700; border-radius:8px;" onclick="setQuickExtHours(3)">+3 Horas</button>
+                    </div>
+                    <input type="number" id="extHours" min="1" step="1" value="1" required style="font-size:1.1rem; font-weight:700;" oninput="onExtHoursChange()">
+                </div>
+
+                <!-- Selector de Tipo de Extensión -->
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label style="font-weight: 700; margin-bottom: 8px;">Tipo de Extensión *</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <label id="extTypeRegularLabel" style="display:flex; flex-direction:column; padding:12px; border:2px solid var(--primary); border-radius:var(--radius-md); cursor:pointer; background:#eff6ff; transition:all 0.2s;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                <input type="radio" name="extType" id="extTypeRegular" value="regular" checked onchange="onExtTypeChange()" style="accent-color:var(--primary);">
+                                <strong style="font-size:0.9rem; color:var(--text-main);">Regular</strong>
+                            </div>
+                            <small style="color:var(--text-muted); font-size:0.75rem;">Cobro estándar por hora</small>
+                        </label>
+                        <label id="extTypePlanLabel" style="display:flex; flex-direction:column; padding:12px; border:2px solid var(--border); border-radius:var(--radius-md); cursor:pointer; background:#ffffff; transition:all 0.2s;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                <input type="radio" name="extType" id="extTypePlan" value="plan" onchange="onExtTypeChange()" style="accent-color:var(--primary);">
+                                <strong style="font-size:0.9rem; color:var(--text-main);">Descontar de Plan</strong>
+                            </div>
+                            <small style="color:var(--text-muted); font-size:0.75rem;">Usa horas del paquete</small>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Sección: Extensión Regular -->
+                <div id="extRegularSection" style="background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom: 10px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <span>Costo extra a cobrar ($)</span>
+                            <span id="extRateHint" style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Tarifa: $0.00/h</span>
+                        </label>
+                        <input type="number" id="extCostInput" min="0" step="any" style="font-weight:700; font-size:1.1rem; color:var(--primary);">
+                        <small class="hint" style="margin-top:4px; font-size:0.75rem;">Se agregará como cargo por cobrar al confirmar la salida.</small>
+                    </div>
+                </div>
+
+                <!-- Sección: Descontar de Plan -->
+                <div id="extPlanSection" style="display:none; background:#f5f3ff; border:1px solid #ddd6fe; border-radius:var(--radius-md); padding:14px; margin-bottom: 10px;">
+                    <div id="extPlanAvailableGroup">
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label style="color:#5b21b6; font-weight:700; margin-bottom:4px;">Seleccionar Plan del Niño *</label>
+                            <select id="extPlanSelect" onchange="onExtPlanSelectChange()" style="border-color:#c4b5fd;"></select>
+                        </div>
+                        <div id="extPlanBalanceInfo" style="font-size:0.8rem; color:#6d28d9; font-weight:600; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-info-circle"></i> <span id="extPlanBalanceText">Saldo disponible: 0h</span>
+                        </div>
+                        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #ddd6fe; display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; color:#5b21b6;">
+                            <span>Horas a descontar: <span id="extPlanDeductPreview">1h</span></span>
+                            <span style="color:var(--success);">Costo extra: $0.00</span>
+                        </div>
+                    </div>
+                    <div id="extNoPlanWarning" style="display:none; color:#991b1b; background:#fee2e2; border:1px solid #fecaca; border-radius:8px; padding:10px; font-size:0.82rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Este niño no cuenta con paquetes o planes de horas con saldo disponible. Selecciona "Regular" para cobrar la extensión.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeExtendModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="extSubmitBtn"><i class="fas fa-check"></i> Extender Tiempo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="receiptModal" class="modal-overlay">
     <div class="modal-content" style="max-width: 450px;">
         <div class="modal-header"><h2>Ticket</h2><button onclick="closeReceiptModal()">×</button></div>
@@ -1304,8 +1510,8 @@
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Categoría / Sección *</label>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatSnacks" onclick="selectQuickProductCategory('Snacks')" style="flex:1; border-radius:8px; font-weight:700;">🍿 Snacks</button>
-                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatTalleres" onclick="selectQuickProductCategory('Talleres')" style="flex:1; border-radius:8px; font-weight:700;">🎨 Talleres</button>
+                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatSnacks" onclick="selectQuickProductCategory('Snacks')" style="flex:1; border-radius:8px; font-weight:700;"><i class="fas fa-cookie-bite"></i> Snacks</button>
+                        <button type="button" class="btn btn-sm btn-outline" id="pQuickCatTalleres" onclick="selectQuickProductCategory('Talleres')" style="flex:1; border-radius:8px; font-weight:700;"><i class="fas fa-palette"></i> Talleres</button>
                     </div>
                     <select id="pCategorySelect" required>
                         <option value="">-- Seleccionar Categoría --</option>
@@ -1538,10 +1744,10 @@
                                 <i class="fas fa-border-all"></i> Todos
                             </button>
                             <button type="button" class="btn btn-sm btn-outline" id="spCatBtn_snacks" onclick="setSellCategoryFilter('snacks')" style="font-size:0.8rem; padding:4px 10px; border-radius:20px;">
-                                🍿 Snacks
+                                <i class="fas fa-cookie-bite"></i> Snacks
                             </button>
                             <button type="button" class="btn btn-sm btn-outline" id="spCatBtn_talleres" onclick="setSellCategoryFilter('talleres')" style="font-size:0.8rem; padding:4px 10px; border-radius:20px;">
-                                🎨 Talleres
+                                <i class="fas fa-palette"></i> Talleres
                             </button>
                         </div>
 
@@ -1810,6 +2016,7 @@
                             <th>Fecha</th>
                             <th>Concepto</th>
                             <th>Importe</th>
+                            <th style="text-align:right;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="acChargesBody"></tbody>
@@ -1888,6 +2095,80 @@
         <div class="modal-header"><h2>PIN</h2></div>
         <div class="modal-body"><input type="password" id="pinInput" maxlength="4" style="text-align: center; font-size: 2rem; width: 100%;"></div>
         <div class="modal-footer"><button class="btn btn-primary" id="pinSubmitBtn">OK</button><button class="btn btn-outline" onclick="cancelPinModal()">X</button></div>
+    </div>
+</div>
+
+<!-- MODAL: EDITAR VENTA -->
+<div id="editSaleModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit" style="color:var(--primary); margin-right:8px;"></i> Editar Registro de Venta</h2>
+            <button type="button" onclick="closeEditSaleModal()">×</button>
+        </div>
+        <form id="editSaleForm">
+            <input type="hidden" id="esSaleId">
+            <div class="modal-body">
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-md); padding:10px 14px; margin-bottom:15px; font-size:0.82rem; color:#1e40af;">
+                    <i class="fas fa-shield-alt"></i> <strong>Modo Administrador Autorizado.</strong> Los cambios se actualizarán en los reportes, estadísticas y base de datos.
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Niño / Cliente *</label>
+                    <input type="text" id="esChildName" required placeholder="Nombre del niño o cliente">
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label>Concepto / Detalle de la Venta *</label>
+                    <input type="text" id="esConcept" required placeholder="Ej: Compra: Galletas">
+                </div>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Cantidad *</label>
+                        <input type="number" id="esQty" min="1" step="1" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Importe Total ($) *</label>
+                        <input type="number" id="esAmount" min="0" step="any" required style="font-weight:700; color:var(--primary);">
+                    </div>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Costo de Compra ($)</label>
+                        <input type="number" id="esCost" min="0" step="any">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Método de Pago *</label>
+                        <select id="esPaymentMethod">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="A Cuenta">A Cuenta (Deuda)</option>
+                            <option value="Cortesía">Cortesía</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-grid" style="grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Estado *</label>
+                        <select id="esStatus">
+                            <option value="paid">PAGADO</option>
+                            <option value="pending">PENDIENTE DE PAGO</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Fecha y Hora *</label>
+                        <input type="datetime-local" id="esDate" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeEditSaleModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar Cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -2016,6 +2297,50 @@
     let pendingCheckoutId = null;
     const notifiedLocally = new Set();
     let timerInterval = null;
+
+    // --- AUTORIZACIÓN Y CONTRASEÑA ADMIN ---
+    const ADMIN_SALES_PASSWORD = "grow2026";
+    const authorizedDebtElements = new Set();
+    let isCoTotalUnlocked = false;
+    let isApCostUnlocked = false;
+
+    function isDebtOrPendingMethod(val) {
+        if (!val) return false;
+        const normalized = String(val).toLowerCase().trim();
+        return normalized === 'pendiente' || normalized === 'a cuenta' || normalized === 'pending';
+    }
+
+    function verifySalesAdminPassword(actionLabel = "esta acción") {
+        const pass = prompt(`Ingrese la contraseña de administrador para ${actionLabel}:`);
+        if (pass === null) return false;
+        if (pass.trim() === ADMIN_SALES_PASSWORD) {
+            return true;
+        } else {
+            showToast("Contraseña incorrecta", "error");
+            return false;
+        }
+    }
+
+    window.unlockCheckoutTotal = () => {
+        if (isCoTotalUnlocked) {
+            const input = $('coTotalInput');
+            if (input) { input.focus(); input.select(); }
+            return;
+        }
+        if (!verifySalesAdminPassword("modificar el monto a cobrar")) return;
+        isCoTotalUnlocked = true;
+        const input = $('coTotalInput');
+        if (input) {
+            input.readOnly = false;
+            input.style.background = '#ffffff';
+            input.focus();
+            input.select();
+        }
+        if ($('iconLockCoTotal')) {
+            $('iconLockCoTotal').className = 'fas fa-unlock';
+        }
+        showToast("Monto desbloqueado para edición");
+    };
 
     // --- UTILS ---
     const $ = id => document.getElementById(id);
@@ -2218,6 +2543,7 @@
         unsubscribers.push(onSnapshot(query(collection(db, "sales"), orderBy("date", "desc")), snap => {
             state.sales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderSalesReport();
+            renderSalesTable();
             updateIncomeToday();
             if (window.currentAccountChildId) {
                 openAccountModal(window.currentAccountChildId);
@@ -2315,8 +2641,9 @@
             'active-tab': perms.view_active,
             'checkin-tab': perms.manage_checkin,
             'kids-tab': perms.manage_kids,
-            'inventory-tab': perms.use_store || perms.manage_inventory,
+            'inventory-tab': perms.manage_inventory,
             'plans-tab': perms.manage_plans,
+            'sales-tab': perms.use_store || perms.manage_inventory,
             'history-tab': perms.view_history,
             'cash-tab': perms.view_cash,
             'settings-tab': perms.manage_settings,
@@ -2724,6 +3051,12 @@
         $('searchResults').style.display = 'block';
     };
 
+    window.openAssignPlanModalFromCheckin = () => {
+        const childId = $('selectedChildId') ? $('selectedChildId').value : null;
+        if (!childId) return showToast("Primero busca y selecciona un niño", "error");
+        window.openAssignPlanModal(childId);
+    };
+
     window.selectChildForCheckin = id => {
         const c = state.children.find(x => x.id === id);
         if (!c) return;
@@ -2758,6 +3091,8 @@
                 serviceOptions += `<option value="plan_${idx}">Usar Plan: ${p.name} (${p.hoursRemaining.toFixed(1)}h rest.)</option>`;
             }
         });
+
+        serviceOptions += '<option value="__buy_new_plan__" style="color:#4338ca; font-weight:700;">Comprar / Asignar Nuevo Plan a este Niño...</option>';
         
         const serviceTypeEl = $('checkinServiceType');
         if(serviceTypeEl) {
@@ -2774,6 +3109,17 @@
         const type = serviceTypeEl.value;
         const standardFields = $('checkinStandardFields');
         const planFields = $('checkinPlanFields');
+
+        if (type === '__buy_new_plan__') {
+            const childId = $('selectedChildId') ? $('selectedChildId').value : null;
+            serviceTypeEl.value = 'normal';
+            if (standardFields) standardFields.style.display = 'grid';
+            if (planFields) planFields.style.display = 'none';
+            if (childId) {
+                window.openAssignPlanModal(childId);
+            }
+            return;
+        }
 
         if (type === 'normal') {
             if(standardFields) standardFields.style.display = 'grid';
@@ -2846,6 +3192,12 @@
             hrs = parseInt($('hoursSelect').value);
             limitTime = new Date(now.getTime() + hrs * 3600000);
             method = $('payMethod').value;
+            if (isDebtOrPendingMethod(method) && !authorizedDebtElements.has($('payMethod'))) {
+                if (!verifySalesAdminPassword("registrar entrada con adeudo / pago pendiente")) {
+                    return;
+                }
+                authorizedDebtElements.add($('payMethod'));
+            }
         }
 
         try {
@@ -2863,6 +3215,7 @@
             });
             $('checkinForm').style.display = 'none';
             $('checkinForm').reset();
+            authorizedDebtElements.delete($('payMethod'));
             $('noSelectedChild').style.display = 'block';
             switchTab('active-tab');
             showToast('Entrada registrada');
@@ -2888,11 +3241,21 @@
                 debtWarning = `<div style="color:var(--danger); font-size:0.75rem; font-weight:700; margin-top:4px;"><i class="fas fa-exclamation-triangle"></i> Debe ${formatMoney(child.debt)}</div>`;
             }
             let planInfo = '';
-            if (s.usePlan) {
+            if (s.usePlan || (s.serviceType && s.serviceType.startsWith('plan_'))) {
                 planInfo = `<div style="color:var(--success); font-size:0.75rem; font-weight:700; margin-top:4px;"><i class="fas fa-star"></i> Usando Plan</div>`;
             }
 
+            let planExtInfo = '';
+            const planExts = s.planExtensions || [];
+            const planExtHoursSum = planExts.reduce((acc, p) => acc + (p.hours || 0), 0);
+            if (s.planExtraHours && s.serviceType && s.serviceType.startsWith('plan_')) {
+                planExtInfo = `<small style="display:block; color:#4338ca; font-weight:700;"><i class="fas fa-star"></i> +${s.planExtraHours}h ext. Plan</small>`;
+            } else if (planExtHoursSum > 0) {
+                planExtInfo = `<small style="display:block; color:#4338ca; font-weight:700;"><i class="fas fa-star"></i> +${planExtHoursSum}h ext. Plan (${planExts.map(p => p.planName).join(', ')})</small>`;
+            }
+
             let btnProd = perms.use_store ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="openSellModal('${s.childId}')" title="Vender Producto"><i class="fas fa-cookie-bite"></i> + Prod</button>` : '';
+            let btnAddPlan = perms.manage_plans ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px; color:#4338ca; border-color:#c7d2fe; background:#f5f3ff;" onclick="openAssignPlanModal('${s.childId}')" title="Comprar o Asignar Plan"><i class="fas fa-file-invoice-dollar"></i> + Plan</button>` : '';
             let btnExtend = (perms.manage_checkin || perms.manage_checkout) ? `<button class="btn btn-outline btn-sm" style="flex:1; min-width:80px;" onclick="extendTime('${s.id}')"><i class="fas fa-plus"></i> Extender</button>` : '';
             let btnCheckout = perms.manage_checkout ? `<button class="btn btn-primary btn-sm" style="flex:1; min-width:80px;" onclick="requestCheckout('${s.id}')"><i class="fas fa-flag-checkered"></i> Salida</button>` : '';
             let btnAccount = `<button class="btn btn-outline btn-sm" style="flex:1; min-width:110px;" onclick="openAccountModal('${s.childId}')" title="Estado de Cuenta"><i class="fas fa-wallet" style="color:${child.debt > 0 ? 'var(--danger)' : 'var(--primary)'};"></i> Estado de Cuenta</button>`;
@@ -2903,7 +3266,8 @@
                         <div class="kid-info-main">
                             <h3>${child.name}</h3>
                             <small>${s.hoursPaid > 0 ? s.hoursPaid + 'h pagadas · ' : ''}${s.method}</small>
-                            ${s.customExtraCost ? `<small style="display:block; color:var(--success);">+${formatMoney(s.customExtraCost)} extra cobrado</small>` : ''}
+                            ${s.customExtraCost ? `<small style="display:block; color:var(--success);">+${s.extraHoursAdded || 0}h regular (+${formatMoney(s.customExtraCost)})</small>` : ''}
+                            ${planExtInfo}
                             ${debtWarning}
                             ${planInfo}
                         </div>
@@ -2928,6 +3292,7 @@
                     </div>
                     <div class="kid-actions" style="flex-wrap:wrap; gap:8px;">
                         ${btnAccount}
+                        ${btnAddPlan}
                         ${btnProd}
                         ${btnExtend}
                         ${btnCheckout}
@@ -2995,32 +3360,235 @@
         });
     }
 
-    window.extendTime = async id => {
+    // --- MODAL EXTENDER TIEMPO (REGULAR VS DESCONTAR DE PLAN) ---
+    let pendingExtendSessionId = null;
+
+    window.extendTime = id => {
+        window.openExtendModal(id);
+    };
+
+    window.openExtendModal = id => {
         const s = state.activeSessions.find(x => x.id === id);
         if (!s) return;
+        const child = state.children.find(c => c.id === s.childId) || { name: 'Niño' };
+
+        pendingExtendSessionId = id;
+        $('extSessionId').value = id;
+        $('extChildName').innerText = child.name;
+        $('extCurrentLimit').innerText = `Salida actual: ${formatTimeShort(s.limitTime)}`;
+
+        let isPlanSession = s.serviceType && s.serviceType.startsWith('plan_');
+        let isCortesia = s.serviceType === 'cortesia_estancia';
         
-        const h = prompt("¿Cuántas horas extra se van a agregar al cronómetro?", "1");
-        if (!h || isNaN(h) || parseFloat(h) <= 0) return;
+        let typeBadgeText = 'Estancia Normal';
+        if (isPlanSession) typeBadgeText = 'Usando Plan';
+        else if (isCortesia) typeBadgeText = 'Cortesía';
+        $('extSessionTypeBadge').innerText = typeBadgeText;
+
+        // Horas por defecto
+        $('extHours').value = '1';
+
+        // Obtener planes activos del niño con saldo disponible
+        let activePlans = child.activePlans || [];
+        if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
         
+        const now = new Date();
+        const availablePlans = [];
+        activePlans.forEach((p, idx) => {
+            const exp = p.expirationDate ? new Date(p.expirationDate + 'T23:59:59') : null;
+            const isNotExpired = !exp || exp >= now;
+            if ((p.hoursRemaining || 0) > 0 && isNotExpired) {
+                availablePlans.push({ ...p, originalIndex: idx });
+            }
+        });
+
+        const planSelect = $('extPlanSelect');
+        if (availablePlans.length > 0) {
+            planSelect.innerHTML = availablePlans.map(p => 
+                `<option value="${p.originalIndex}">${p.name} (${p.hoursRemaining.toFixed(1)}h disponibles)</option>`
+            ).join('');
+            
+            if (isPlanSession && s.usePlanIndex !== undefined) {
+                const match = availablePlans.find(p => p.originalIndex === s.usePlanIndex);
+                if (match) planSelect.value = match.originalIndex;
+            }
+
+            $('extPlanAvailableGroup').style.display = 'block';
+            $('extNoPlanWarning').style.display = 'none';
+            $('extTypePlan').disabled = false;
+        } else {
+            planSelect.innerHTML = '<option value="">Sin planes disponibles</option>';
+            $('extPlanAvailableGroup').style.display = 'none';
+            $('extNoPlanWarning').style.display = 'block';
+            $('extTypePlan').disabled = true;
+        }
+
+        // Si la sesión ya usaba plan y hay horas disponibles, preseleccionar modo plan; si no, regular
+        if (isPlanSession && availablePlans.length > 0) {
+            $('extTypePlan').checked = true;
+            $('extTypeRegular').checked = false;
+        } else {
+            $('extTypeRegular').checked = true;
+            $('extTypePlan').checked = false;
+        }
+
+        onExtTypeChange();
+        onExtHoursChange();
+
+        $('extendModal').style.display = 'flex';
+    };
+
+    window.closeExtendModal = () => {
+        $('extendModal').style.display = 'none';
+        pendingExtendSessionId = null;
+    };
+
+    window.setQuickExtHours = h => {
+        $('extHours').value = h;
+        onExtHoursChange();
+    };
+
+    window.onExtHoursChange = () => {
+        const id = pendingExtendSessionId;
+        const s = state.activeSessions.find(x => x.id === id);
+        if (!s) return;
         const child = state.children.find(c => c.id === s.childId) || {};
-        const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
-        const suggestedCost = parseFloat(h) * ratePerHour;
         
-        const costStr = prompt(`¿Qué costo se va a cobrar por estas ${h} hora(s)?`, suggestedCost.toString());
-        if (costStr === null || isNaN(costStr) || parseFloat(costStr) < 0) return;
-        const cost = parseFloat(costStr);
+        const h = Math.max(1, parseInt($('extHours').value) || 1);
+        const currentLimit = new Date(s.limitTime);
+        const newLimit = new Date(currentLimit.getTime() + h * 3600000);
+        
+        $('extNewLimitPreview').innerText = `Nueva salida: ${formatTimeShort(newLimit)}`;
+        $('extPlanDeductPreview').innerText = `${h} hora${h > 1 ? 's' : ''}`;
+
+        // Actualizar costo regular sugerido
+        const ratePerHour = child.customExtraHourRate ? parseFloat(child.customExtraHourRate) : (state.config.hourlyRate || 0);
+        $('extRateHint').innerText = `Tarifa: ${formatMoney(ratePerHour)}/h`;
+        $('extCostInput').value = (h * ratePerHour).toFixed(2);
+
+        onExtPlanSelectChange();
+    };
+
+    window.onExtTypeChange = () => {
+        const isPlan = $('extTypePlan').checked;
+        $('extRegularSection').style.display = isPlan ? 'none' : 'block';
+        $('extPlanSection').style.display = isPlan ? 'block' : 'none';
+
+        if (isPlan) {
+            $('extTypePlanLabel').style.borderColor = '#7c3aed';
+            $('extTypePlanLabel').style.background = '#f5f3ff';
+            $('extTypeRegularLabel').style.borderColor = 'var(--border)';
+            $('extTypeRegularLabel').style.background = '#ffffff';
+        } else {
+            $('extTypeRegularLabel').style.borderColor = 'var(--primary)';
+            $('extTypeRegularLabel').style.background = '#eff6ff';
+            $('extTypePlanLabel').style.borderColor = 'var(--border)';
+            $('extTypePlanLabel').style.background = '#ffffff';
+        }
+        onExtPlanSelectChange();
+    };
+
+    window.onExtPlanSelectChange = () => {
+        const id = pendingExtendSessionId;
+        const s = state.activeSessions.find(x => x.id === id);
+        if (!s) return;
+        const child = state.children.find(c => c.id === s.childId) || {};
+        let activePlans = child.activePlans || [];
+        if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+
+        const planIdx = parseInt($('extPlanSelect').value);
+        const plan = activePlans[planIdx];
+        if (plan) {
+            const h = Math.max(1, parseInt($('extHours').value) || 1);
+            const remaining = plan.hoursRemaining || 0;
+            $('extPlanBalanceText').innerText = `Saldo disponible: ${remaining.toFixed(1)}h`;
+            if (h > remaining) {
+                $('extPlanBalanceInfo').innerHTML = `<i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> <span style="color:var(--danger); font-weight:700;">Saldo insuficiente (${remaining.toFixed(1)}h disp., pides ${h}h)</span>`;
+            } else {
+                $('extPlanBalanceInfo').innerHTML = `<i class="fas fa-info-circle"></i> <span id="extPlanBalanceText">Saldo disponible: ${remaining.toFixed(1)}h (quedarán ${(remaining - h).toFixed(1)}h)</span>`;
+            }
+        }
+    };
+
+    $('extendForm').onsubmit = async e => {
+        e.preventDefault();
+        const id = pendingExtendSessionId;
+        const s = state.activeSessions.find(x => x.id === id);
+        if (!s) return;
+        const child = state.children.find(c => c.id === s.childId) || {};
+        const isPlanMode = $('extTypePlan').checked;
+        const h = parseInt($('extHours').value, 10);
+
+        if (isNaN(h) || h <= 0) {
+            return showToast("Ingresa un número entero válido de horas a extender", "error");
+        }
+
+        const newLimitTime = new Date(new Date(s.limitTime).getTime() + h * 3600000).toISOString();
+
+        $('extSubmitBtn').disabled = true;
 
         try {
-            await updateDoc(doc(db, "sessions", id), {
-                limitTime: new Date(new Date(s.limitTime).getTime() + h * 3600000).toISOString(),
-                extraHoursAdded: (s.extraHoursAdded || 0) + parseFloat(h),
-                customExtraCost: (s.customExtraCost || 0) + cost,
-                notified: false
-            });
+            if (isPlanMode) {
+                let activePlans = child.activePlans || [];
+                if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+                const planIdx = parseInt($('extPlanSelect').value, 10);
+                const plan = activePlans[planIdx];
+
+                if (!plan) return showToast("Selecciona un plan válido", "error");
+                if (h > (plan.hoursRemaining || 0)) {
+                    return showToast(`El plan solo tiene ${plan.hoursRemaining.toFixed(1)} hora(s) disponible(s)`, "error");
+                }
+
+                // Si la sesión ya usaba este mismo plan:
+                if (s.serviceType === 'plan_' + planIdx) {
+                    await updateDoc(doc(db, "sessions", id), {
+                        limitTime: newLimitTime,
+                        selectedPlanHours: (s.selectedPlanHours || s.hoursPaid || 1) + h,
+                        planExtraHours: (s.planExtraHours || 0) + h,
+                        notified: false
+                    });
+                } else {
+                    // Si era sesión normal, cortesía u otro plan:
+                    let currentPlanExts = s.planExtensions || [];
+                    const existingExt = currentPlanExts.find(p => p.planIndex === planIdx);
+                    if (existingExt) {
+                        existingExt.hours += h;
+                    } else {
+                        currentPlanExts.push({
+                            planIndex: planIdx,
+                            planName: plan.name,
+                            hours: h
+                        });
+                    }
+                    await updateDoc(doc(db, "sessions", id), {
+                        limitTime: newLimitTime,
+                        planExtensions: currentPlanExts,
+                        planExtraHours: (s.planExtraHours || 0) + h,
+                        notified: false
+                    });
+                }
+
+                showToast(`Tiempo extendido +${h}h (Descontando de plan "${plan.name}")`);
+            } else {
+                // Extensión Regular:
+                const cost = Math.max(0, parseFloat($('extCostInput').value) || 0);
+
+                await updateDoc(doc(db, "sessions", id), {
+                    limitTime: newLimitTime,
+                    extraHoursAdded: (s.extraHoursAdded || 0) + h,
+                    customExtraCost: (s.customExtraCost || 0) + cost,
+                    notified: false
+                });
+
+                showToast(`Tiempo extendido +${h}h (${formatMoney(cost)})`);
+            }
+
             notifiedLocally.delete(id);
-            showToast('Tiempo y costo extendidos');
+            closeExtendModal();
         } catch (err) {
-            showToast("No se pudo extender: " + err.message, "error");
+            showToast("No se pudo extender el tiempo: " + err.message, "error");
+        } finally {
+            $('extSubmitBtn').disabled = false;
         }
     };
 
@@ -3099,7 +3667,9 @@
         const now = new Date();
         const entry = new Date(s.entryTime);
         const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
-        const adjustedDurationMinutes = Math.max(0, durationMinutes - (s.extraHoursAdded || 0) * 60);
+        
+        const totalPlanExtHours = (s.planExtensions || []).reduce((acc, p) => acc + (p.hours || 0), 0);
+        const adjustedDurationMinutes = Math.max(0, durationMinutes - ((s.extraHoursAdded || 0) + totalPlanExtHours) * 60);
         
         let prepaidCost = 0;
         let extraCharge = 0;
@@ -3117,7 +3687,8 @@
             const plan = activePlans[s.usePlanIndex] || {};
             
             const billableHours = calcBillableHours(adjustedDurationMinutes);
-            const maxDeduct = Math.min(billableHours, plan.hoursPerDay || 2, plan.hoursRemaining || 0);
+            const allowedCap = s.selectedPlanHours || s.hoursPaid || plan.hoursPerDay || 2;
+            const maxDeduct = Math.min(billableHours, allowedCap, plan.hoursRemaining || 0);
             planHoursDeducted = Math.round(maxDeduct * 100) / 100;
 
             const extraBillableHours = Math.max(0, billableHours - planHoursDeducted);
@@ -3153,29 +3724,55 @@
         pendingCheckoutId = id;
         $('coChildName').innerText = child.name;
         
-        if ($('coTotalInput')) $('coTotalInput').value = total.toFixed(2);
+        isCoTotalUnlocked = false;
+        if ($('coTotalInput')) {
+            $('coTotalInput').value = total.toFixed(2);
+            $('coTotalInput').readOnly = true;
+            $('coTotalInput').style.background = '#f8fafc';
+        }
+        if ($('iconLockCoTotal')) {
+            $('iconLockCoTotal').className = 'fas fa-lock';
+        }
         if ($('coCalculatedBadge')) $('coCalculatedBadge').innerText = 'Sugerido: ' + formatMoney(total);
         if ($('coSplitPayment')) $('coSplitPayment').checked = false;
         if ($('coSinglePayGroup')) $('coSinglePayGroup').style.display = 'block';
         if ($('coSplitPayGroup')) $('coSplitPayGroup').style.display = 'none';
 
+        let extraNoteDetails = [];
         if (isPlan) {
-            $('coExtraNote').innerText = `Consumo plan: ${planHoursDeducted.toFixed(1)}h deducidas. ` +
-                (extraCharge > 0 ? `Exceso: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}` : 'Sin recargo extra.');
-        } else if (isCortesia) {
-            $('coExtraNote').innerText = 'Estancia de cortesía. Sin cobro.';
-        } else {
-            $('coExtraNote').innerText = extraCharge > 0
-                ? `Tiempo extra: ${extraTimeStr} · Cargo: ${formatMoney(extraCharge)}`
-                : 'Sin recargo por tiempo extra (menos de 10 min sobrantes).';
+            extraNoteDetails.push(`Consumo plan: ${planHoursDeducted.toFixed(1)}h deducidas.`);
         }
+        if (totalPlanExtHours > 0) {
+            extraNoteDetails.push(`+${totalPlanExtHours}h descontadas por extensión de plan (${s.planExtensions.map(pe => pe.planName).join(', ')}).`);
+        }
+        if (s.customExtraCost) {
+            extraNoteDetails.push(`+${formatMoney(s.customExtraCost)} de extensión regular.`);
+        }
+        if (extraCharge > 0) {
+            extraNoteDetails.push(`Tiempo excedente: ${extraTimeStr} · Cargo extra: ${formatMoney(extraCharge)}`);
+        } else if (!isCortesia && !isPlan && totalPlanExtHours === 0 && !s.customExtraCost) {
+            extraNoteDetails.push('Sin recargo por tiempo extra.');
+        } else if (isCortesia) {
+            extraNoteDetails.push('Estancia de cortesía. Sin cobro.');
+        }
+
+        $('coExtraNote').innerText = extraNoteDetails.join(' ');
         
         $('coPickedUpBy').value = child.parentName || '';
         $('coAuthorizedHint').innerText = child.authorized ? `Autorizados: ${child.authorized}` : 'Solo el tutor registrado.';
         
-        if ($('coPayMethod')) $('coPayMethod').value = (s.method && ['Efectivo', 'Tarjeta', 'Transferencia', 'Pendiente', 'A Cuenta'].includes(s.method)) ? s.method : 'Efectivo';
-        if ($('coPayMethod1')) $('coPayMethod1').value = 'Efectivo';
-        if ($('coPayMethod2')) $('coPayMethod2').value = 'Tarjeta';
+        if ($('coPayMethod')) {
+            $('coPayMethod').value = (s.method && ['Efectivo', 'Tarjeta', 'Transferencia', 'Pendiente', 'A Cuenta'].includes(s.method)) ? s.method : 'Efectivo';
+            authorizedDebtElements.delete($('coPayMethod'));
+        }
+        if ($('coPayMethod1')) {
+            $('coPayMethod1').value = 'Efectivo';
+            authorizedDebtElements.delete($('coPayMethod1'));
+        }
+        if ($('coPayMethod2')) {
+            $('coPayMethod2').value = 'Tarjeta';
+            authorizedDebtElements.delete($('coPayMethod2'));
+        }
         const half = Math.round((total / 2) * 100) / 100;
         if ($('coPayAmount1')) $('coPayAmount1').value = half.toFixed(2);
         if ($('coPayAmount2')) $('coPayAmount2').value = (total - half).toFixed(2);
@@ -3207,7 +3804,9 @@
         const now = new Date();
         const entry = new Date(s.entryTime);
         const durationMinutes = Math.max(0, Math.round((now - entry) / 60000));
-        const adjustedDurationMinutes = Math.max(0, durationMinutes - (s.extraHoursAdded || 0) * 60);
+        
+        const totalPlanExtHours = (s.planExtensions || []).reduce((acc, p) => acc + (p.hours || 0), 0);
+        const adjustedDurationMinutes = Math.max(0, durationMinutes - ((s.extraHoursAdded || 0) + totalPlanExtHours) * 60);
         
         let prepaidCost = 0;
         let extraCharge = 0;
@@ -3264,6 +3863,12 @@
         if (isNaN(rawEditedTotal) || rawEditedTotal < 0) {
             return showToast('Por favor ingresa un monto válido a cobrar', 'error');
         }
+        if (Math.abs(rawEditedTotal - calculatedTotal) > 0.01 && !isCoTotalUnlocked) {
+            if (!verifySalesAdminPassword("cobrar con monto modificado")) {
+                return;
+            }
+            isCoTotalUnlocked = true;
+        }
         const total = rawEditedTotal;
 
         // Determinar métodos y desgloses de pago
@@ -3288,6 +3893,15 @@
                 { method: m2, amount: a2 }
             ].filter(sp => sp.amount > 0);
 
+            const hasDebt = splits.some(sp => isDebtOrPendingMethod(sp.method));
+            if (hasDebt && !authorizedDebtElements.has($('coPayMethod1')) && !authorizedDebtElements.has($('coPayMethod2'))) {
+                if (!verifySalesAdminPassword("cobrar estancia con adeudo / pago pendiente")) {
+                    return;
+                }
+                authorizedDebtElements.add($('coPayMethod1'));
+                authorizedDebtElements.add($('coPayMethod2'));
+            }
+
             payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
 
             splits.forEach(sp => {
@@ -3298,6 +3912,12 @@
         } else {
             payMethod = total > 0 ? $('coPayMethod').value : (isPlan ? 'Plan' : (isCortesia ? 'Cortesía' : s.method));
             if (total > 0) {
+                if (isDebtOrPendingMethod(payMethod) && !authorizedDebtElements.has($('coPayMethod'))) {
+                    if (!verifySalesAdminPassword("cobrar estancia con adeudo / pago pendiente")) {
+                        return;
+                    }
+                    authorizedDebtElements.add($('coPayMethod'));
+                }
                 splits = [{ method: payMethod, amount: total }];
                 if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
                     pendingDebtToAdd = total;
@@ -3317,6 +3937,12 @@
         const isFullyPending = (pendingDebtToAdd === total && total > 0);
         const isPartialPending = (pendingDebtToAdd > 0 && pendingDebtToAdd < total);
 
+        let combinedNotes = s.notes || '';
+        if (totalPlanExtHours > 0) {
+            const planExtNote = `Extensión Plan: +${totalPlanExtHours}h (${s.planExtensions.map(pe => `${pe.planName}: ${pe.hours}h`).join(', ')})`;
+            combinedNotes = combinedNotes ? `${combinedNotes} | ${planExtNote}` : planExtNote;
+        }
+
         const log = {
             childId: child.id,
             childName: child.name,
@@ -3327,7 +3953,7 @@
             total,
             method: payMethod,
             splits: splits,
-            notes: s.notes || '',
+            notes: combinedNotes,
             pickedUpBy,
             extra: extraCharge > 0,
             prepaidCost,
@@ -3336,7 +3962,7 @@
             usePlan: isPlan,
             serviceType: s.serviceType || 'normal',
             concept: conceptName,
-            planHoursDeducted,
+            planHoursDeducted: planHoursDeducted + totalPlanExtHours,
             status: isFullyPending ? 'pending' : (isPartialPending ? 'partial' : 'paid'),
             paymentDate: isFullyPending ? null : now.toISOString()
         };
@@ -3347,16 +3973,30 @@
             await deleteDoc(doc(db, "sessions", id));
             notifiedLocally.delete(id);
 
-            if (isPlan && s.usePlanIndex !== undefined) {
-                let activePlans = child.activePlans || [];
-                if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
-                if (activePlans[s.usePlanIndex]) {
-                    activePlans[s.usePlanIndex].hoursRemaining = Math.max(0, activePlans[s.usePlanIndex].hoursRemaining - planHoursDeducted);
-                    await updateDoc(doc(db, "kids", child.id), {
-                        activePlans,
-                        activePlan: null
-                    });
-                }
+            // Deducir horas del plan principal y/o de extensiones de plan
+            let activePlans = child.activePlans || [];
+            if (child.activePlan && activePlans.length === 0) activePlans = [child.activePlan];
+            let plansModified = false;
+
+            if (isPlan && s.usePlanIndex !== undefined && activePlans[s.usePlanIndex]) {
+                activePlans[s.usePlanIndex].hoursRemaining = Math.max(0, activePlans[s.usePlanIndex].hoursRemaining - planHoursDeducted);
+                plansModified = true;
+            }
+
+            if (s.planExtensions && s.planExtensions.length > 0) {
+                s.planExtensions.forEach(pe => {
+                    if (activePlans[pe.planIndex]) {
+                        activePlans[pe.planIndex].hoursRemaining = Math.max(0, activePlans[pe.planIndex].hoursRemaining - (pe.hours || 0));
+                        plansModified = true;
+                    }
+                });
+            }
+
+            if (plansModified) {
+                await updateDoc(doc(db, "kids", child.id), {
+                    activePlans,
+                    activePlan: null
+                });
             }
 
             if (pendingDebtToAdd > 0) {
@@ -3375,13 +4015,19 @@
             $('rExit').innerText = formatTimeShort(now);
             $('rDuration').innerText = formatDuration(durationMinutes);
             
+            let prepaidText = '';
             if (isPlan) {
-                $('rPrepaid').innerText = `Plan (${planHoursDeducted.toFixed(1)}h consumidas)`;
+                prepaidText = `Plan (${planHoursDeducted.toFixed(1)}h consumidas)`;
             } else if (isCortesia) {
-                $('rPrepaid').innerText = `Cortesía`;
+                prepaidText = `Cortesía`;
             } else {
-                $('rPrepaid').innerText = `${s.hoursPaid}h (${formatMoney(prepaidCost)})`;
+                prepaidText = `${s.hoursPaid}h (${formatMoney(prepaidCost)})`;
             }
+            if (totalPlanExtHours > 0) {
+                prepaidText += ` + ${totalPlanExtHours}h extensión Plan`;
+            }
+            $('rPrepaid').innerText = prepaidText;
+
             $('rExtra').innerText = extraCharge > 0 ? `${extraTimeStr} (${formatMoney(extraCharge)})` : 'Ninguno';
             $('rPickedUp').innerText = pickedUpBy;
             if ($('rMethod')) $('rMethod').innerText = payMethod || 'Efectivo';
@@ -3566,7 +4212,14 @@
                     <tr>
                         <td>${new Date(sessionDate).toLocaleDateString('es-MX')}</td>
                         <td>Estancia / Sesión (${formatDuration(s.durationMinutes)})</td>
-                        <td>${formatMoney(s.total)}</td>
+                        <td><strong>${formatMoney(s.total)}</strong></td>
+                        <td style="text-align:right;">
+                            <div style="display:inline-flex; gap:4px;">
+                                <button class="btn btn-outline btn-icon btn-sm" onclick="promptEditVisitAmount('${s.id}')" title="Editar Monto"><i class="fas fa-pencil-alt" style="color:var(--primary);"></i></button>
+                                <button class="btn btn-outline btn-icon btn-sm" onclick="promptChangeVisitStatus('${s.id}')" title="Marcar como Pagada"><i class="fas fa-check" style="color:var(--success);"></i></button>
+                                <button class="btn btn-danger btn-icon btn-sm" onclick="promptDeleteVisit('${s.id}')" title="Eliminar Visita"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
@@ -3576,7 +4229,13 @@
                     <tr>
                         <td>${new Date(saleDate).toLocaleDateString('es-MX')}</td>
                         <td>${s.concept || 'Venta'} (x${s.qty || 1})</td>
-                        <td>${formatMoney(s.amount)}</td>
+                        <td><strong>${formatMoney(s.amount)}</strong></td>
+                        <td style="text-align:right;">
+                            <div style="display:inline-flex; gap:4px;">
+                                <button class="btn btn-outline btn-icon btn-sm" onclick="promptEditSale('${s.id}')" title="Editar Venta"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger btn-icon btn-sm" onclick="promptDeleteSale('${s.id}')" title="Eliminar Venta"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
@@ -3585,7 +4244,8 @@
                     <tr>
                         <td>${child.debtSince ? new Date(child.debtSince).toLocaleDateString('es-MX') : '-'}</td>
                         <td>Saldo Pendiente de Pago</td>
-                        <td>${formatMoney(totalDebt)}</td>
+                        <td><strong>${formatMoney(totalDebt)}</strong></td>
+                        <td style="text-align:right;">-</td>
                     </tr>
                 `;
             }
@@ -3723,14 +4383,16 @@
     function renderHistory() {
         const rows = getFilteredHistory();
         if (rows.length === 0) {
-            $('historyTableBody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-history"></i><p>No hay registros con estos filtros</p></div></td></tr>`;
+            $('historyTableBody').innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fas fa-history"></i><p>No hay registros con estos filtros</p></div></td></tr>`;
             return;
         }
         $('historyTableBody').innerHTML = rows.map(h => {
+            const isPending = (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid'));
+            const isPartial = (h.status === 'partial');
             let statusBadge = '';
-            if (h.status === 'pending') {
+            if (isPending) {
                 statusBadge = ' (<span style="color:var(--danger);font-weight:700;">Debe</span>)';
-            } else if (h.status === 'partial') {
+            } else if (isPartial) {
                 statusBadge = ' (<span style="color:var(--warning);font-weight:700;">Parcial</span>)';
             }
             return `
@@ -3743,6 +4405,19 @@
                 <td data-label="Método"><span style="font-size:0.85rem; font-weight:600;">${h.method || 'Efectivo'}</span></td>
                 <td data-label="Recogió">${h.pickedUpBy || '-'}</td>
                 <td data-label="Obs."><small>${h.notes || '-'}</small></td>
+                <td data-label="Acciones" style="text-align:center;">
+                    <div style="display:inline-flex; gap:6px; justify-content:center;">
+                        <button class="btn btn-outline btn-icon btn-sm" onclick="promptEditVisitAmount('${h.id}')" title="Editar Monto">
+                            <i class="fas fa-pencil-alt" style="color:var(--primary);"></i>
+                        </button>
+                        <button class="btn btn-outline btn-icon btn-sm" onclick="promptChangeVisitStatus('${h.id}')" title="${isPending ? 'Marcar como Pagada' : 'Marcar como Pendiente / Adeudo'}">
+                            <i class="fas ${isPending ? 'fa-check' : 'fa-hourglass-half'}" style="color:${isPending ? 'var(--success)' : 'var(--warning)'};"></i>
+                        </button>
+                        <button class="btn btn-danger btn-icon btn-sm" onclick="promptDeleteVisit('${h.id}')" title="Eliminar Visita">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
             </tr>
             `;
         }).join('');
@@ -4180,6 +4855,7 @@
         } else {
             currentCart.push({
                 productId: p.id,
+                categoryId: p.categoryId || '',
                 name: p.name + badgeNote,
                 rawName: p.name,
                 qty: qty,
@@ -4323,8 +4999,18 @@
             if ($('spSplitPayment')) $('spSplitPayment').checked = false;
             if ($('spSinglePayGroup')) $('spSinglePayGroup').style.display = 'block';
             if ($('spSplitPayGroup')) $('spSplitPayGroup').style.display = 'none';
-            if ($('spPayMethod1')) $('spPayMethod1').value = 'Efectivo';
-            if ($('spPayMethod2')) $('spPayMethod2').value = 'Tarjeta';
+            if ($('spPayMethod')) {
+                $('spPayMethod').value = 'Efectivo';
+                authorizedDebtElements.delete($('spPayMethod'));
+            }
+            if ($('spPayMethod1')) {
+                $('spPayMethod1').value = 'Efectivo';
+                authorizedDebtElements.delete($('spPayMethod1'));
+            }
+            if ($('spPayMethod2')) {
+                $('spPayMethod2').value = 'Tarjeta';
+                authorizedDebtElements.delete($('spPayMethod2'));
+            }
             if ($('spIsEmployeeSale')) $('spIsEmployeeSale').checked = false;
             if ($('spIsCourtesy')) $('spIsCourtesy').checked = false;
             if ($('spStockLabel')) $('spStockLabel').innerText = '-';
@@ -4566,6 +5252,16 @@
                 { method: m2, amount: a2 }
             ].filter(sp => sp.amount > 0);
 
+            const hasDebt = splits.some(sp => isDebtOrPendingMethod(sp.method));
+            if (hasDebt && !authorizedDebtElements.has($('spPayMethod1')) && !authorizedDebtElements.has($('spPayMethod2'))) {
+                if (!verifySalesAdminPassword("vender productos con adeudo / pago pendiente")) {
+                    if ($('btnSubmitSellForm')) $('btnSubmitSellForm').disabled = false;
+                    return;
+                }
+                authorizedDebtElements.add($('spPayMethod1'));
+                authorizedDebtElements.add($('spPayMethod2'));
+            }
+
             payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
 
             splits.forEach(sp => {
@@ -4577,6 +5273,13 @@
             payMethod = $('spPayMethod').value;
             if (payMethod === 'A Cuenta' && !child) {
                 return showToast("Debes seleccionar un niño para cobrar a cuenta", "error");
+            }
+            if (grandTotal > 0 && isDebtOrPendingMethod(payMethod) && !authorizedDebtElements.has($('spPayMethod'))) {
+                if (!verifySalesAdminPassword("vender productos con adeudo / pago pendiente")) {
+                    if ($('btnSubmitSellForm')) $('btnSubmitSellForm').disabled = false;
+                    return;
+                }
+                authorizedDebtElements.add($('spPayMethod'));
             }
             splits = grandTotal > 0 ? [{ method: payMethod, amount: grandTotal }] : [];
             if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
@@ -4609,6 +5312,8 @@
                     childId: child ? child.id : '',
                     childName: child ? child.name : 'Venta de Mostrador',
                     type: 'product',
+                    productId: item.productId || '',
+                    categoryId: item.categoryId || (p ? p.categoryId : ''),
                     concept: item.isCourtesy ? `Cortesía: ${item.rawName}` : `Compra: ${item.name}`,
                     qty: item.qty,
                     price: item.unitPrice,
@@ -5055,9 +5760,20 @@
         if ($('apSplitPayment')) $('apSplitPayment').checked = false;
         if ($('apSinglePayGroup')) $('apSinglePayGroup').style.display = 'block';
         if ($('apSplitPayGroup')) $('apSplitPayGroup').style.display = 'none';
-        if ($('apPayMethod1')) $('apPayMethod1').value = 'Efectivo';
-        if ($('apPayMethod2')) $('apPayMethod2').value = 'Transferencia';
+        if ($('apPayMethod')) {
+            $('apPayMethod').value = 'Efectivo';
+            authorizedDebtElements.delete($('apPayMethod'));
+        }
+        if ($('apPayMethod1')) {
+            $('apPayMethod1').value = 'Efectivo';
+            authorizedDebtElements.delete($('apPayMethod1'));
+        }
+        if ($('apPayMethod2')) {
+            $('apPayMethod2').value = 'Transferencia';
+            authorizedDebtElements.delete($('apPayMethod2'));
+        }
         if ($('apIncludeInIncome')) $('apIncludeInIncome').checked = true;
+        isApCostUnlocked = false;
         
         const today = new Date().toISOString().split('T')[0];
         $('apStartDate').value = today;
@@ -5105,8 +5821,15 @@
         if (!child) return;
 
         const planId = $('apPlanSelect').value;
+        const selectedPlan = state.plans.find(x => x.id === planId);
         const planName = $('apPlanSelect').options[$('apPlanSelect').selectedIndex].text.split(' (')[0];
         const cost = parseFloat($('apCost').value);
+        if (selectedPlan && Math.abs(cost - (selectedPlan.cost || 0)) > 0.01 && !isApCostUnlocked) {
+            if (!verifySalesAdminPassword("modificar el costo del plan")) {
+                return;
+            }
+            isApCostUnlocked = true;
+        }
         const duration = parseInt($('apDuration').value);
         const startDate = $('apStartDate').value;
         const expirationDate = $('apEndDate').value;
@@ -5135,6 +5858,15 @@
                 { method: m2, amount: a2 }
             ].filter(sp => sp.amount > 0);
 
+            const hasDebt = splits.some(sp => isDebtOrPendingMethod(sp.method));
+            if (hasDebt && !authorizedDebtElements.has($('apPayMethod1')) && !authorizedDebtElements.has($('apPayMethod2'))) {
+                if (!verifySalesAdminPassword("asignar plan con adeudo / pago pendiente")) {
+                    return;
+                }
+                authorizedDebtElements.add($('apPayMethod1'));
+                authorizedDebtElements.add($('apPayMethod2'));
+            }
+
             payMethod = 'Mixto (' + splits.map(sp => `${sp.method}: ${formatMoney(sp.amount)}`).join(' + ') + ')';
 
             splits.forEach(sp => {
@@ -5144,6 +5876,12 @@
             });
         } else {
             payMethod = $('apPayMethod').value;
+            if (cost > 0 && isDebtOrPendingMethod(payMethod) && !authorizedDebtElements.has($('apPayMethod'))) {
+                if (!verifySalesAdminPassword("asignar plan con adeudo / pago pendiente")) {
+                    return;
+                }
+                authorizedDebtElements.add($('apPayMethod'));
+            }
             splits = cost > 0 ? [{ method: payMethod, amount: cost }] : [];
             if (payMethod === 'A Cuenta' || payMethod === 'Pendiente') {
                 pendingDebtToAdd = cost;
@@ -5196,6 +5934,18 @@
             }
 
             await updateDoc(doc(db, "kids", child.id), updates);
+
+            // Si el niño estaba siendo registrado en la pantalla de Entrada (checkin), refrescar y preseleccionar el nuevo plan
+            if ($('selectedChildId') && $('selectedChildId').value === child.id && $('checkinForm') && $('checkinForm').style.display !== 'none') {
+                child.activePlans = activePlans;
+                child.activePlan = null;
+                selectChildForCheckin(child.id);
+                const newPlanIdx = activePlans.length - 1;
+                if ($('checkinServiceType')) {
+                    $('checkinServiceType').value = `plan_${newPlanIdx}`;
+                    onCheckinServiceTypeChange();
+                }
+            }
 
             closeAssignPlanModal();
             showToast("Plan asignado con éxito");
@@ -5300,33 +6050,512 @@
         }
     };
 
-    // --- SALES REPORTS ---
-    function renderSalesReport() {
+    // --- SALES REPORTS & BREAKDOWN (PLANES, SNACKS, TALLERES, PRODUCTOS) ---
+    function getSaleCategoryInfo(s) {
+        if (s.type === 'plan') {
+            return {
+                categoryKey: 'PLAN',
+                categoryLabel: 'Plan',
+                categoryBadge: 'Plan',
+                badgeColor: [67, 56, 202]
+            };
+        }
+
+        const concept = (s.concept || '').toLowerCase();
+        let catName = '';
+        let catId = s.categoryId;
+
+        if (s.productId) {
+            const prod = state.products.find(p => p.id === s.productId);
+            if (prod && prod.categoryId) catId = prod.categoryId;
+        }
+
+        if (catId) {
+            const cat = state.categories.find(c => c.id === catId);
+            if (cat) catName = (cat.name || '').toLowerCase();
+        }
+
+        if (catName.includes('taller') || concept.includes('taller') || concept.includes('pintura') || concept.includes('arte') || concept.includes('manualidad')) {
+            return {
+                categoryKey: 'TALLER',
+                categoryLabel: 'Taller',
+                categoryBadge: 'Taller',
+                badgeColor: [5, 150, 105]
+            };
+        } else if (catName.includes('snack') || catName.includes('bebida') || catName.includes('alimento') || catName.includes('galleta') || concept.includes('snack') || concept.includes('paleta') || concept.includes('agua') || concept.includes('jugo') || concept.includes('galleta') || concept.includes('dulce') || concept.includes('papas') || concept.includes('sabrita') || concept.includes('refresco')) {
+            return {
+                categoryKey: 'SNACK',
+                categoryLabel: 'Snack',
+                categoryBadge: 'Snack',
+                badgeColor: [217, 119, 6]
+            };
+        } else {
+            return {
+                categoryKey: 'PRODUCTO',
+                categoryLabel: 'Producto',
+                categoryBadge: 'Producto',
+                badgeColor: [37, 99, 235]
+            };
+        }
+    }
+
+    window.renderSalesReport = () => {
         if (!$('salesFrom') || !$('salesTo')) return;
         const fromStr = $('salesFrom').value;
         const toStr = $('salesTo').value;
+        const catFilter = $('salesCategoryFilter') ? $('salesCategoryFilter').value : '';
         const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
         const to = toStr ? new Date(toStr + 'T23:59:59') : null;
 
-        const filteredSales = state.sales.filter(s => {
+        let totalPlans = 0, totalSnacks = 0, totalTalleres = 0, totalProducts = 0;
+        let totalSales = 0, totalCost = 0;
+
+        (state.sales || []).forEach(s => {
             const d = new Date(s.date);
-            if (from && d < from) return false;
-            if (to && d > to) return false;
+            if (from && d < from) return;
+            if (to && d > to) return;
+
+            const info = getSaleCategoryInfo(s);
+            const amt = s.amount || 0;
+            const cst = s.cost || 0;
+
+            if (info.categoryKey === 'PLAN') totalPlans += amt;
+            else if (info.categoryKey === 'SNACK') totalSnacks += amt;
+            else if (info.categoryKey === 'TALLER') totalTalleres += amt;
+            else totalProducts += amt;
+
+            if (!catFilter || catFilter === info.categoryKey) {
+                totalSales += amt;
+                totalCost += cst;
+            }
+        });
+
+        if ($('repPlansTotal')) $('repPlansTotal').innerText = formatMoney(totalPlans);
+        if ($('repSnacksTotal')) $('repSnacksTotal').innerText = formatMoney(totalSnacks);
+        if ($('repTalleresTotal')) $('repTalleresTotal').innerText = formatMoney(totalTalleres);
+        if ($('repProductsTotal')) $('repProductsTotal').innerText = formatMoney(totalProducts);
+
+        const netProfit = totalSales - totalCost;
+        if ($('repTotalSales')) $('repTotalSales').innerText = formatMoney(totalSales);
+        if ($('repTotalCost')) $('repTotalCost').innerText = formatMoney(totalCost);
+        if ($('repNetProfit')) {
+            $('repNetProfit').innerText = formatMoney(netProfit);
+            $('repNetProfit').style.color = netProfit < 0 ? 'var(--danger)' : 'var(--success)';
+        }
+    };
+
+    // --- GESTIÓN ADMINISTRATIVA: VENTAS Y VISITAS ---
+
+    window.promptEditSale = saleId => {
+        const s = (state.sales || []).find(x => x.id === saleId);
+        if (!s) return showToast("Venta no encontrada", "error");
+
+        if (!verifySalesAdminPassword("EDITAR esta venta")) return;
+
+        $('esSaleId').value = s.id;
+        $('esChildName').value = s.childName || '';
+        $('esConcept').value = s.concept || '';
+        $('esQty').value = s.qty || 1;
+        $('esAmount').value = s.amount !== undefined ? s.amount : 0;
+        $('esCost').value = s.cost !== undefined ? s.cost : 0;
+        $('esPaymentMethod').value = s.paymentMethod || 'Efectivo';
+        $('esStatus').value = s.status || 'paid';
+
+        if (s.date) {
+            const d = new Date(s.date);
+            const pad = n => String(n).padStart(2, '0');
+            const localDatetime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            $('esDate').value = localDatetime;
+        }
+
+        $('editSaleModal').style.display = 'flex';
+    };
+
+    window.closeEditSaleModal = () => {
+        $('editSaleModal').style.display = 'none';
+    };
+
+    $('editSaleForm').onsubmit = async e => {
+        e.preventDefault();
+        const saleId = $('esSaleId').value;
+        const s = (state.sales || []).find(x => x.id === saleId);
+        if (!s) return;
+
+        const oldAmount = parseFloat(s.amount !== undefined ? s.amount : 0);
+        const oldStatus = s.status || 'paid';
+        const oldMethod = s.paymentMethod || 'Efectivo';
+        const isOldPending = (oldStatus === 'pending' || isDebtOrPendingMethod(oldMethod));
+
+        const newAmount = parseFloat($('esAmount').value) || 0;
+        const newCost = parseFloat($('esCost').value) || 0;
+        const newQty = parseInt($('esQty').value) || 1;
+        const newMethod = $('esPaymentMethod').value;
+        const newStatus = $('esStatus').value;
+        const isNewPending = (newStatus === 'pending' || isDebtOrPendingMethod(newMethod));
+
+        const updatedData = {
+            childName: $('esChildName').value.trim(),
+            concept: $('esConcept').value.trim(),
+            qty: newQty,
+            amount: newAmount,
+            cost: newCost,
+            paymentMethod: newMethod,
+            status: newStatus,
+            date: new Date($('esDate').value).toISOString()
+        };
+
+        try {
+            await updateDoc(doc(db, "sales", saleId), updatedData);
+
+            // Sincronizar adeudo del niño si corresponde
+            const childId = s.childId || (state.children.find(c => c.name && c.name.toLowerCase() === (s.childName || '').toLowerCase())?.id);
+            if (childId) {
+                const child = state.children.find(c => c.id === childId);
+                if (child) {
+                    let curDebt = parseFloat(child.debt || 0);
+                    let debtDiff = 0;
+                    if (isOldPending && isNewPending) {
+                        debtDiff = newAmount - oldAmount;
+                    } else if (!isOldPending && isNewPending) {
+                        debtDiff = newAmount;
+                    } else if (isOldPending && !isNewPending) {
+                        debtDiff = -oldAmount;
+                    }
+                    if (debtDiff !== 0) {
+                        const newDebt = Math.max(0, curDebt + debtDiff);
+                        await updateDoc(doc(db, "kids", child.id), {
+                            debt: newDebt,
+                            debtSince: newDebt > 0 ? (child.debtSince || new Date().toISOString()) : null
+                        });
+                    }
+                }
+            }
+
+            closeEditSaleModal();
+            showToast("Venta actualizada exitosamente");
+
+            if ($('accountModal') && $('accountModal').classList.contains('active') && childId) {
+                openAccountModal(childId);
+            }
+        } catch (err) {
+            showToast("Error al actualizar la venta: " + err.message, "error");
+        }
+    };
+
+    window.promptDeleteSale = async saleId => {
+        const s = (state.sales || []).find(x => x.id === saleId);
+        if (!s) return showToast("Venta no encontrada", "error");
+
+        if (!verifySalesAdminPassword("ELIMINAR esta venta")) return;
+
+        if (!confirm(`¿Estás seguro de ELIMINAR permanentemente este registro de venta?\n\nConcepto: ${s.concept}\nImporte: ${formatMoney(s.amount)}\nCliente: ${s.childName}`)) {
+            return;
+        }
+
+        try {
+            // Si la venta era a crédito/pendiente, ajustar deuda del niño
+            const isPendingSale = (s.status === 'pending' || isDebtOrPendingMethod(s.paymentMethod));
+            const childId = s.childId || (state.children.find(c => c.name && c.name.toLowerCase() === (s.childName || '').toLowerCase())?.id);
+            if (isPendingSale && childId) {
+                const child = state.children.find(c => c.id === childId);
+                if (child && (child.debt || 0) > 0) {
+                    const remainingDebt = Math.max(0, (child.debt || 0) - (s.amount || 0));
+                    await updateDoc(doc(db, "kids", child.id), {
+                        debt: remainingDebt,
+                        debtSince: remainingDebt > 0 ? child.debtSince : null
+                    });
+                }
+            }
+
+            await deleteDoc(doc(db, "sales", saleId));
+            showToast("Venta eliminada permanentemente");
+
+            if ($('accountModal') && $('accountModal').classList.contains('active') && childId) {
+                openAccountModal(childId);
+            }
+        } catch (err) {
+            showToast("Error al eliminar venta: " + err.message, "error");
+        }
+    };
+
+    window.promptEditVisitAmount = async visitId => {
+        const h = (state.history || []).find(x => x.id === visitId);
+        if (!h) return showToast("Visita no encontrada en el historial", "error");
+
+        if (!verifySalesAdminPassword("EDITAR el monto de esta visita")) return;
+
+        const currentTotal = parseFloat(h.total || 0);
+        const childName = h.childName || 'el niño';
+        const input = prompt(`Modificar monto de la visita de ${childName}\n\nMonto actual registrado: ${formatMoney(currentTotal)}\n\nIngrese el nuevo monto ($):`, currentTotal.toFixed(2));
+
+        if (input === null) return;
+        const newTotal = parseFloat(input);
+        if (isNaN(newTotal) || newTotal < 0) {
+            return showToast("Monto ingresado no es válido", "error");
+        }
+
+        if (Math.abs(newTotal - currentTotal) < 0.001) {
+            return showToast("El monto es igual al actual, sin cambios");
+        }
+
+        try {
+            const diff = newTotal - currentTotal;
+            await updateDoc(doc(db, "history", visitId), {
+                total: newTotal
+            });
+
+            if (h.childId && (h.status === 'pending' || h.method === 'A Cuenta') && h.status !== 'paid') {
+                const child = state.children.find(c => c.id === h.childId);
+                if (child) {
+                    const newDebt = Math.max(0, parseFloat(child.debt || 0) + diff);
+                    await updateDoc(doc(db, "kids", child.id), {
+                        debt: newDebt,
+                        debtSince: newDebt > 0 ? (child.debtSince || new Date().toISOString()) : null
+                    });
+                }
+            }
+
+            showToast(`Monto de visita actualizado a: ${formatMoney(newTotal)}`);
+
+            if ($('accountModal') && $('accountModal').classList.contains('active') && h.childId) {
+                openAccountModal(h.childId);
+            }
+        } catch (err) {
+            showToast("Error al actualizar monto: " + err.message, "error");
+        }
+    };
+
+    window.promptDeleteVisit = async visitId => {
+        const h = (state.history || []).find(x => x.id === visitId);
+        if (!h) return showToast("Visita no encontrada en el historial", "error");
+
+        if (!verifySalesAdminPassword("ELIMINAR esta visita del historial")) return;
+
+        const childName = h.childName || 'el niño';
+        const amountStr = formatMoney(h.total || 0);
+        const dateStr = formatDate(h.date || h.exit || Date.now());
+
+        if (!confirm(`¿Estás seguro de ELIMINAR permanentemente esta visita del historial?\n\nNiño: ${childName}\nFecha: ${dateStr}\nImporte: ${amountStr}\nTiempo: ${formatDuration(h.durationMinutes || 0)}`)) {
+            return;
+        }
+
+        try {
+            // Si la visita tenía adeudo pendiente y no había sido liquidada, descontar de la deuda acumulada del niño
+            if (h.childId && (h.status === 'pending' || h.method === 'A Cuenta') && h.status !== 'paid') {
+                const child = state.children.find(c => c.id === h.childId);
+                if (child && (child.debt || 0) > 0) {
+                    const remainingDebt = Math.max(0, (child.debt || 0) - (h.total || 0));
+                    await updateDoc(doc(db, "kids", child.id), {
+                        debt: remainingDebt,
+                        debtSince: remainingDebt > 0 ? child.debtSince : null
+                    });
+                }
+            }
+
+            await deleteDoc(doc(db, "history", visitId));
+            showToast("Visita eliminada del historial correctamente");
+
+            if ($('accountModal') && $('accountModal').classList.contains('active') && h.childId) {
+                openAccountModal(h.childId);
+            }
+        } catch (err) {
+            showToast("Error al eliminar visita: " + err.message, "error");
+        }
+    };
+
+    window.promptChangeVisitStatus = async visitId => {
+        const h = (state.history || []).find(x => x.id === visitId);
+        if (!h) return showToast("Visita no encontrada en el historial", "error");
+
+        if (!verifySalesAdminPassword("CAMBIAR EL ESTADO de adeudo de esta visita")) return;
+
+        const isCurrentlyPending = (h.status === 'pending' || (h.method === 'A Cuenta' && h.status !== 'paid'));
+        const newStatus = isCurrentlyPending ? 'paid' : 'pending';
+        const actionDesc = isCurrentlyPending ? 'marcarla como PAGADA' : 'marcarla como PENDIENTE DE PAGO (Generar adeudo)';
+
+        if (!confirm(`La visita de ${h.childName || 'este registro'} (${formatMoney(h.total || 0)}) está actualmente ${isCurrentlyPending ? 'PENDIENTE (ADEUDO)' : 'PAGADA'}.\n\n¿Deseas ${actionDesc}?`)) {
+            return;
+        }
+
+        try {
+            const now = new Date().toISOString();
+            const updateData = {
+                status: newStatus
+            };
+            if (newStatus === 'paid') {
+                updateData.paymentDate = now;
+            } else {
+                updateData.paymentDate = null;
+            }
+
+            await updateDoc(doc(db, "history", visitId), updateData);
+
+            if (h.childId) {
+                const child = state.children.find(c => c.id === h.childId);
+                if (child) {
+                    let newDebt = parseFloat(child.debt || 0);
+                    let newDebtSince = child.debtSince;
+                    if (newStatus === 'pending') {
+                        newDebt += (h.total || 0);
+                        if (!newDebtSince) newDebtSince = now;
+                    } else {
+                        newDebt = Math.max(0, newDebt - (h.total || 0));
+                        if (newDebt <= 0) newDebtSince = null;
+                    }
+                    await updateDoc(doc(db, "kids", child.id), {
+                        debt: newDebt,
+                        debtSince: newDebtSince
+                    });
+                }
+            }
+
+            showToast(`Estado de la visita actualizado a: ${newStatus === 'paid' ? 'PAGADO' : 'PENDIENTE'}`);
+
+            if ($('accountModal') && $('accountModal').classList.contains('active') && h.childId) {
+                openAccountModal(h.childId);
+            }
+        } catch (err) {
+            showToast("Error al actualizar estado de la visita: " + err.message, "error");
+        }
+    };
+
+    // --- PROTECCIÓN EN TIEMPO REAL AL SELECCIONAR ESTADOS DE ADEUDO / PENDIENTE ---
+    function setupPendingDebtProtection(selectId, defaultFallback = 'Efectivo') {
+        const select = $(selectId);
+        if (!select) return;
+
+        let lastApproved = isDebtOrPendingMethod(select.value) ? defaultFallback : select.value;
+
+        select.addEventListener('focus', function() {
+            if (!isDebtOrPendingMethod(this.value) || authorizedDebtElements.has(this)) {
+                lastApproved = this.value;
+            }
+        });
+
+        select.addEventListener('change', function() {
+            const currentVal = this.value;
+            if (isDebtOrPendingMethod(currentVal)) {
+                if (authorizedDebtElements.has(this)) {
+                    lastApproved = currentVal;
+                    return;
+                }
+
+                const ok = verifySalesAdminPassword("seleccionar estado de adeudo / pago pendiente");
+                if (ok) {
+                    authorizedDebtElements.add(this);
+                    lastApproved = currentVal;
+                    showToast("Autorización concedida para adeudo / pendiente", "success");
+                } else {
+                    this.value = lastApproved || defaultFallback;
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                    if (this.id === 'coPayMethod1' || this.id === 'coPayMethod2') {
+                        if (typeof onCheckoutSplitMethodChange === 'function') onCheckoutSplitMethodChange();
+                    }
+                }
+            } else {
+                authorizedDebtElements.delete(this);
+                lastApproved = currentVal;
+            }
+        });
+    }
+
+    function initDebtProtections() {
+        [
+            'payMethod',
+            'coPayMethod', 'coPayMethod1', 'coPayMethod2',
+            'spPayMethod', 'spPayMethod1', 'spPayMethod2',
+            'apPayMethod', 'apPayMethod1', 'apPayMethod2'
+        ].forEach(id => {
+            setupPendingDebtProtection(id);
+        });
+    }
+
+    initDebtProtections();
+
+    window.renderSalesTable = () => {
+        const tbody = $('salesManagementTableBody');
+        if (!tbody) return;
+
+        const q = ($('salesTableSearch') ? $('salesTableSearch').value : '').toLowerCase().trim();
+        const catFilter = $('salesTableCatFilter') ? $('salesTableCatFilter').value : '';
+
+        const filtered = (state.sales || []).filter(s => {
+            const info = getSaleCategoryInfo(s);
+            if (catFilter && info.categoryKey !== catFilter) return false;
+            if (q) {
+                const matchChild = (s.childName || '').toLowerCase().includes(q);
+                const matchConcept = (s.concept || '').toLowerCase().includes(q);
+                const matchMethod = (s.paymentMethod || '').toLowerCase().includes(q);
+                if (!matchChild && !matchConcept && !matchMethod) return false;
+            }
             return true;
         });
 
-        const totalSales = filteredSales.reduce((sum, s) => sum + (s.amount || 0), 0);
-        const totalCost = filteredSales.reduce((sum, s) => sum + (s.cost || 0), 0);
-        const netProfit = totalSales - totalCost;
+        if ($('salesTableCountBadge')) {
+            $('salesTableCountBadge').innerText = `${filtered.length} venta${filtered.length === 1 ? '' : 's'}`;
+        }
 
-        $('repTotalSales').innerText = formatMoney(totalSales);
-        $('repTotalCost').innerText = formatMoney(totalCost);
-        $('repNetProfit').innerText = formatMoney(netProfit);
-        $('repNetProfit').style.color = netProfit < 0 ? 'var(--danger)' : 'var(--success)';
-    }
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="padding:25px;"><p>No se encontraron registros de ventas.</p></div></td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(s => {
+            const info = getSaleCategoryInfo(s);
+            const isPending = s.status === 'pending';
+
+            let catColor = '#1d4ed8';
+            let catBg = '#eff6ff';
+            let catBorder = '#bfdbfe';
+            if (info.categoryKey === 'PLAN') {
+                catColor = '#4338ca';
+                catBg = '#eef2ff';
+                catBorder = '#c7d2fe';
+            } else if (info.categoryKey === 'SNACK') {
+                catColor = '#b45309';
+                catBg = '#fffbeb';
+                catBorder = '#fde68a';
+            } else if (info.categoryKey === 'TALLER') {
+                catColor = '#047857';
+                catBg = '#ecfdf5';
+                catBorder = '#a7f3d0';
+            }
+
+            return `
+                <tr>
+                    <td data-label="Fecha"><small>${formatDate(s.date)}</small></td>
+                    <td data-label="Niño / Cliente"><strong>${s.childName || 'Venta Libre'}</strong></td>
+                    <td data-label="Categoría">
+                        <span style="display:inline-block; padding:3px 8px; border-radius:6px; font-weight:700; font-size:0.75rem; text-transform:uppercase; color:${catColor}; background:${catBg}; border:1px solid ${catBorder};">
+                            ${info.categoryLabel}
+                        </span>
+                    </td>
+                    <td data-label="Concepto">${s.concept || '-'}</td>
+                    <td data-label="Cant." style="text-align:center;">${s.qty || 1}</td>
+                    <td data-label="Total"><strong>${formatMoney(s.amount)}</strong></td>
+                    <td data-label="Método"><small>${s.paymentMethod || 'Efectivo'}</small></td>
+                    <td data-label="Estado">
+                        <span class="kid-status-badge ${isPending ? 'danger' : 'success'}" style="font-size:0.72rem;">
+                            ${isPending ? 'PENDIENTE' : 'PAGADO'}
+                        </span>
+                    </td>
+                    <td data-label="Acciones" style="text-align:center;">
+                        <div style="display:inline-flex; gap:6px; justify-content:center;">
+                            <button class="btn btn-outline btn-icon btn-sm" onclick="promptEditSale('${s.id}')" title="Editar Venta">
+                                <i class="fas fa-edit" style="color:var(--primary);"></i>
+                            </button>
+                            <button class="btn btn-danger btn-icon btn-sm" onclick="promptDeleteSale('${s.id}')" title="Eliminar Venta">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
 
     window.clearSalesHistory = async () => {
-        if (state.sales.length === 0) return showToast("No hay historial de ventas para eliminar", "error");
+        if (!state.sales || state.sales.length === 0) return showToast("No hay historial de ventas para eliminar", "error");
         
         const confirmPhrase = "BORRAR VENTAS";
         const input = prompt(`ADVERTENCIA: Esta acción es irreversible.\nSe borrará TODO el historial de ventas registradas permanentemente.\nSi estás seguro, escribe "${confirmPhrase}" para continuar:`);
@@ -5342,7 +6571,6 @@
             await Promise.all(state.sales.map(s => deleteDoc(doc(db, "sales", s.id))));
             
             showToast("Historial de ventas eliminado correctamente");
-            
             if (btn) btn.disabled = false;
         } catch (err) {
             showToast("Error al borrar historial: " + err.message, "error");
@@ -5352,58 +6580,207 @@
     };
 
     window.generateSalesReportPdf = () => {
-        const fromStr = $('salesFrom').value;
-        const toStr = $('salesTo').value;
-        const from = fromStr ? new Date(fromStr + 'T00:00:00') : new Date();
-        const to = toStr ? new Date(toStr + 'T23:59:59') : new Date();
+        const fromStr = $('salesFrom') ? $('salesFrom').value : '';
+        const toStr = $('salesTo') ? $('salesTo').value : '';
+        const catFilter = $('salesCategoryFilter') ? $('salesCategoryFilter').value : '';
+        const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+        const to = toStr ? new Date(toStr + 'T23:59:59') : null;
 
-        const filteredSales = state.sales.filter(s => {
+        let filteredSales = (state.sales || []).filter(s => {
             const d = new Date(s.date);
-            if (fromStr && d < from) return false;
-            if (toStr && d > to) return false;
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            const info = getSaleCategoryInfo(s);
+            if (catFilter && catFilter !== info.categoryKey) return false;
             return true;
         });
 
         if (filteredSales.length === 0) {
-            return showToast("No hay ventas en este rango", "error");
+            return showToast("No hay ventas registradas con estos filtros", "error");
         }
 
-        const totalSales = filteredSales.reduce((sum, s) => sum + (s.amount || 0), 0);
-        const totalCost = filteredSales.reduce((sum, s) => sum + (s.cost || 0), 0);
-        const netProfit = totalSales - totalCost;
+        filteredSales.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let planTotal = 0, snackTotal = 0, tallerTotal = 0, prodTotal = 0;
+        let planCount = 0, snackCount = 0, tallerCount = 0, prodCount = 0;
+        let grandTotal = 0, totalCost = 0;
+
+        filteredSales.forEach(s => {
+            const amt = s.amount || 0;
+            const cst = s.cost || 0;
+            grandTotal += amt;
+            totalCost += cst;
+            const info = getSaleCategoryInfo(s);
+            if (info.categoryKey === 'PLAN') { planTotal += amt; planCount++; }
+            else if (info.categoryKey === 'SNACK') { snackTotal += amt; snackCount++; }
+            else if (info.categoryKey === 'TALLER') { tallerTotal += amt; tallerCount++; }
+            else { prodTotal += amt; prodCount++; }
+        });
+
+        const netProfit = grandTotal - totalCost;
 
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
+        const pdf = new jsPDF('landscape');
+        
         pdf.setFontSize(16);
-        pdf.text(state.config.brandName || 'Ludoteca', 14, 15);
+        pdf.setTextColor(30, 74, 118);
+        pdf.text(state.config.brandName || 'KinderControlPro', 14, 14);
+        
         pdf.setFontSize(12);
-        pdf.text(`Reporte de Ventas de Inventario y Planes`, 14, 22);
-        pdf.setFontSize(10);
-        pdf.text(`Rango: ${fromStr || 'Inicio'} - ${toStr || 'Hoy'} | Generado: ${formatDate(new Date())}`, 14, 28);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text("Reporte Detallado de Ventas Desglosadas (Planes, Snacks, Talleres y Productos)", 14, 21);
         
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 116, 139);
+        const filterLabel = catFilter ? ` | Filtro: ${catFilter}` : ' | Todas las categorías';
+        pdf.text(`Período: ${fromStr || 'Inicio'} a ${toStr || 'Hoy'}${filterLabel} | Emitido: ${formatDate(new Date())} | Total ventas: ${filteredSales.length}`, 14, 27);
+
+        const summaryRows = [
+            [
+                `Planes: ${formatMoney(planTotal)} (${planCount})`,
+                `Snacks: ${formatMoney(snackTotal)} (${snackCount})`,
+                `Talleres: ${formatMoney(tallerTotal)} (${tallerCount})`,
+                `Productos: ${formatMoney(prodTotal)} (${prodCount})`
+            ],
+            [
+                `TOTAL VENTAS: ${formatMoney(grandTotal)}`,
+                `Costo Compra: ${formatMoney(totalCost)}`,
+                `GANANCIA NETA: ${formatMoney(netProfit)}`,
+                `Margen: ${grandTotal > 0 ? ((netProfit / grandTotal) * 100).toFixed(1) + '%' : '0%'}`
+            ]
+        ];
+
         pdf.autoTable({
-            startY: 34,
-            head: [['Fecha', 'Niño / Cliente', 'Concepto', 'Cant', 'Total', 'Método', 'Estado']],
-            body: filteredSales.map(s => [
-                formatDate(s.date), 
-                s.childName || 'Venta Libre', 
-                s.concept, 
-                s.qty || 1, 
-                formatMoney(s.amount), 
-                s.paymentMethod, 
-                s.status === 'pending' ? 'PENDIENTE' : 'PAGADO'
-            ]),
-            styles: { fontSize: 8 }
+            startY: 31,
+            body: summaryRows,
+            styles: { fontSize: 8, fontStyle: 'bold', cellPadding: 2, textColor: [30, 74, 118] },
+            theme: 'grid'
         });
-        
-        const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 40;
-        pdf.setFontSize(11);
-        pdf.text(`Ingresos Totales: ${formatMoney(totalSales)}`, 14, finalY + 10);
-        pdf.text(`Costo Adquisición: ${formatMoney(totalCost)}`, 14, finalY + 16);
-        pdf.text(`Ganancia Neta: ${formatMoney(netProfit)}`, 14, finalY + 22);
-        
-        pdf.save(`reporte_ventas_${Date.now()}.pdf`);
-        showToast("PDF generado");
+
+        const tableBody = filteredSales.map(s => {
+            const info = getSaleCategoryInfo(s);
+            const unitPrice = s.price !== undefined ? s.price : (s.qty ? s.amount / s.qty : s.amount);
+            const profit = (s.amount || 0) - (s.cost || 0);
+
+            return [
+                formatDate(s.date),
+                s.childName || 'Venta Libre',
+                info.categoryBadge,
+                s.concept || 'Venta',
+                s.qty || 1,
+                formatMoney(unitPrice),
+                formatMoney(s.amount),
+                formatMoney(s.cost || 0),
+                formatMoney(profit),
+                s.paymentMethod || 'Efectivo',
+                s.status === 'pending' ? 'PENDIENTE' : 'PAGADO'
+            ];
+        });
+
+        pdf.autoTable({
+            startY: pdf.lastAutoTable.finalY + 5,
+            head: [['Fecha y Hora', 'Niño / Cliente', 'Categoría', 'Concepto / Artículo', 'Cant.', 'P. Unit.', 'Total Venta', 'Costo', 'Ganancia', 'Método Pago', 'Estado']],
+            body: tableBody,
+            styles: { fontSize: 7.5, cellPadding: 2 },
+            headStyles: { fillColor: [30, 74, 118], textColor: 255, fontStyle: 'bold' },
+            didParseCell: function(data) {
+                if (data.section === 'body' && data.column.index === 2) {
+                    const text = data.cell.raw || '';
+                    if (text.includes('Plan')) data.cell.styles.textColor = [67, 56, 202];
+                    else if (text.includes('Snack')) data.cell.styles.textColor = [217, 119, 6];
+                    else if (text.includes('Taller')) data.cell.styles.textColor = [5, 150, 105];
+                    else data.cell.styles.textColor = [37, 99, 235];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+                if (data.section === 'body' && data.column.index === 10) {
+                    if (data.cell.raw === 'PENDIENTE') {
+                        data.cell.styles.textColor = [220, 38, 38];
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        const finalY = pdf.lastAutoTable ? pdf.lastAutoTable.finalY : 50;
+        pdf.setFontSize(10);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(`TOTAL RECAUDADO: ${formatMoney(grandTotal)} | UTILIDAD NETA TOTAL: ${formatMoney(netProfit)}`, 14, finalY + 8);
+
+        pdf.save(`reporte_ventas_desglosado_${Date.now()}.pdf`);
+        showToast("PDF de ventas desglosado generado");
+    };
+
+    window.exportSalesReportExcel = () => {
+        const fromStr = $('salesFrom') ? $('salesFrom').value : '';
+        const toStr = $('salesTo') ? $('salesTo').value : '';
+        const catFilter = $('salesCategoryFilter') ? $('salesCategoryFilter').value : '';
+        const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
+        const to = toStr ? new Date(toStr + 'T23:59:59') : null;
+
+        let filteredSales = (state.sales || []).filter(s => {
+            const d = new Date(s.date);
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            const info = getSaleCategoryInfo(s);
+            if (catFilter && catFilter !== info.categoryKey) return false;
+            return true;
+        });
+
+        if (filteredSales.length === 0) {
+            return showToast("No hay ventas registradas con estos filtros", "error");
+        }
+
+        filteredSales.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let planTotal = 0, snackTotal = 0, tallerTotal = 0, prodTotal = 0;
+        let planCount = 0, snackCount = 0, tallerCount = 0, prodCount = 0;
+
+        const rows = filteredSales.map(s => {
+            const info = getSaleCategoryInfo(s);
+            const amt = s.amount || 0;
+            const cst = s.cost || 0;
+            const unitPrice = s.price !== undefined ? s.price : (s.qty ? amt / s.qty : amt);
+
+            if (info.categoryKey === 'PLAN') { planTotal += amt; planCount++; }
+            else if (info.categoryKey === 'SNACK') { snackTotal += amt; snackCount++; }
+            else if (info.categoryKey === 'TALLER') { tallerTotal += amt; tallerCount++; }
+            else { prodTotal += amt; prodCount++; }
+
+            return {
+                'FECHA Y HORA': formatDate(s.date),
+                'NIÑO / CLIENTE': s.childName || 'Venta Libre',
+                'CATEGORÍA': info.categoryLabel,
+                'TIPO': info.categoryKey,
+                'CONCEPTO DETALLADO': s.concept || 'Venta',
+                'CANTIDAD': s.qty || 1,
+                'PRECIO UNITARIO': unitPrice,
+                'TOTAL VENTA': amt,
+                'COSTO COMPRA': cst,
+                'GANANCIA NETA': amt - cst,
+                'FORMA DE PAGO': s.paymentMethod || 'Efectivo',
+                'ESTADO': s.status === 'pending' ? 'PENDIENTE' : 'PAGADO'
+            };
+        });
+
+        const wb = XLSX.utils.book_new();
+
+        // Hoja 1: Ventas detalladas
+        const wsDetails = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, wsDetails, 'Ventas Desglosadas');
+
+        // Hoja 2: Resumen por Categoría
+        const summaryRows = [
+            { 'CATEGORÍA': 'Planes / Paquetes de Horas', 'CANTIDAD VENTAS': planCount, 'TOTAL RECAUDADO': planTotal },
+            { 'CATEGORÍA': 'Snacks / Cafetería', 'CANTIDAD VENTAS': snackCount, 'TOTAL RECAUDADO': snackTotal },
+            { 'CATEGORÍA': 'Talleres / Actividades', 'CANTIDAD VENTAS': tallerCount, 'TOTAL RECAUDADO': tallerTotal },
+            { 'CATEGORÍA': 'Otros Productos / Tiendita', 'CANTIDAD VENTAS': prodCount, 'TOTAL RECAUDADO': prodTotal },
+            { 'CATEGORÍA': 'TOTAL GENERAL', 'CANTIDAD VENTAS': filteredSales.length, 'TOTAL RECAUDADO': planTotal + snackTotal + tallerTotal + prodTotal }
+        ];
+        const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+        XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen por Categoría');
+
+        XLSX.writeFile(wb, `reporte_ventas_desglosado_${Date.now()}.xlsx`);
+        showToast("Excel desglosado generado con éxito");
     };
 
     // --- REPORTE Y EXPORTACIÓN DE INVENTARIO ---
@@ -5517,15 +6894,15 @@
 
     // --- EXPORTACIÓN UNIFICADA (GLOBAL) ---
     window.exportUnifiedData = (format) => {
-        const fromStr = $('historyFrom').value;
-        const toStr = $('historyTo').value;
+        const fromStr = $('historyFrom') ? $('historyFrom').value : '';
+        const toStr = $('historyTo') ? $('historyTo').value : '';
         const from = fromStr ? new Date(fromStr + 'T00:00:00') : null;
         const to = toStr ? new Date(toStr + 'T23:59:59') : null;
 
         let hData = getFilteredHistory().map(h => ({
             fecha: new Date(h.date),
             nino: h.childName,
-            tipoServicio: h.concept || 'Estancia',
+            tipoServicio: h.concept || 'ESTANCIA',
             entrada: formatTimeShort(h.entry),
             salida: formatTimeShort(h.exit),
             horas: formatDuration(h.durationMinutes),
@@ -5536,24 +6913,27 @@
             total: h.total
         }));
 
-        let sData = state.sales.filter(s => {
+        let sData = (state.sales || []).filter(s => {
             const d = new Date(s.date);
             if (from && d < from) return false;
             if (to && d > to) return false;
             return true;
-        }).map(s => ({
-            fecha: new Date(s.date),
-            nino: s.childName || '--',
-            tipoServicio: s.type === 'plan' ? 'PAQUETE' : 'SNACK',
-            entrada: '--',
-            salida: '--',
-            horas: '--',
-            extras: '--',
-            recogio: '--',
-            obs: s.concept || 'SIN OBSERVACIONES',
-            pago: s.paymentMethod || 'EFECTIVO',
-            total: s.amount
-        }));
+        }).map(s => {
+            const info = getSaleCategoryInfo(s);
+            return {
+                fecha: new Date(s.date),
+                nino: s.childName || '--',
+                tipoServicio: info.categoryLabel.toUpperCase(),
+                entrada: '--',
+                salida: '--',
+                horas: s.qty ? `x${s.qty}` : '--',
+                extras: '--',
+                recogio: '--',
+                obs: s.concept || 'SIN OBSERVACIONES',
+                pago: s.paymentMethod || 'EFECTIVO',
+                total: s.amount
+            };
+        });
 
         let combined = [...hData, ...sData].sort((a, b) => a.fecha - b.fecha);
 
@@ -5710,4 +7090,3 @@
 </script>
 </body>
 </html>
-
